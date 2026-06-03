@@ -1,8 +1,16 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 
 export default function Register() {
   const [fullName, setFullName] = useState("");
@@ -11,16 +19,50 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleRegister = () => {
-    console.log({
-      fullName,
-      mobile,
-      email,
-      password,
-      confirmPassword,
-    });
+  const handleRegister = async () => {
+    try {
+      if (
+        !fullName.trim() ||
+        !mobile.trim() ||
+        !password.trim() ||
+        !confirmPassword.trim()
+      ) {
+        Alert.alert("Error", "Please fill all required fields");
+        return;
+      }
 
-    router.replace("/login");
+      if (password !== confirmPassword) {
+        Alert.alert("Error", "Passwords do not match");
+        return;
+      }
+
+      const response = await axios.post(
+        "http://192.168.100.169:5000/api/auth/register",
+        {
+          full_name: fullName,
+          mobile: mobile,
+          email: email,
+          password: password,
+        },
+      );
+
+      Alert.alert("Success", response.data.message);
+
+      setFullName("");
+      setMobile("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+
+      router.replace("/login");
+    } catch (error) {
+      console.log("Register Error:", error);
+
+      Alert.alert(
+        "Registration Failed",
+        error?.response?.data?.message || "Something went wrong",
+      );
+    }
   };
 
   return (
