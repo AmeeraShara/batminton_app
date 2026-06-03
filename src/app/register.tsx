@@ -1,6 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
@@ -12,38 +11,16 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleRegister = async () => {
-    try {
-      if (!fullName || !mobile || !password || !confirmPassword) {
-        alert("Please fill all required fields");
-        return;
-      }
+  const handleRegister = () => {
+    console.log({
+      fullName,
+      mobile,
+      email,
+      password,
+      confirmPassword,
+    });
 
-      if (password !== confirmPassword) {
-        alert("Passwords do not match");
-        return;
-      }
-
-      const response = await axios.post(
-        "http://192.168.1.10:5000/api/auth/register",
-        {
-          fullName,
-          mobile,
-          email,
-          password,
-        },
-      );
-
-      console.log(response.data);
-
-      alert("Registration successful");
-
-      router.replace("/login");
-    } catch (error: any) {
-      console.log(error.response?.data || error.message);
-
-      alert(error.response?.data?.message || "Registration failed");
-    }
+    router.replace("/login");
   };
 
   return (
