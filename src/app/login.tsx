@@ -1,18 +1,47 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    console.log("Login:", username, password);
+  const handleLogin = async () => {
+    try {
+      if (!email.trim() || !password.trim()) {
+        Alert.alert("Error", "Please enter email and password");
+        return;
+      }
 
-    // Navigate after successful login
-    // router.replace("/home");
+      const response = await axios.post(
+        "http://192.168.100.169:5000/api/auth/login",
+        {
+          email: email,
+          password: password,
+        },
+      );
+
+      Alert.alert("Success", response.data.message);
+
+      router.replace("/dashboard");
+    } catch (error) {
+      console.log("Login Error:", error);
+
+      Alert.alert(
+        "Login Failed",
+        error?.response?.data?.message || "Something went wrong",
+      );
+    }
   };
 
   return (
@@ -24,22 +53,25 @@ export default function Login() {
           Sign in to manage your academy
         </ThemedText>
 
-        <ThemedText style={styles.label}>Username</ThemedText>
+        <ThemedText style={styles.label}>Email</ThemedText>
+
         <TextInput
-          placeholder="admin"
+          placeholder="email@example.com"
           placeholderTextColor="#94A3B8"
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
+          keyboardType="email-address"
           autoCapitalize="none"
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
         />
 
         <ThemedText style={styles.label}>Password</ThemedText>
+
         <TextInput
           placeholder="••••••••"
           placeholderTextColor="#94A3B8"
-          style={styles.input}
           secureTextEntry
+          style={styles.input}
           value={password}
           onChangeText={setPassword}
         />
