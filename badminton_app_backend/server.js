@@ -17,3 +17,7 @@ app.get("/", (req, res) => {
 app.listen(5000, () => {
   console.log("Server Running on Port 5000");
 });
+
+const ageGroupRoutes = require("./routes/ageGroupRoutes");
+
+app.use("/api/agegroups", ageGroupRoutes);
