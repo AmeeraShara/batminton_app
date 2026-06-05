@@ -13,20 +13,20 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [user, setUser] = useState(""); // email OR mobile
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
-      if (!email.trim() || !password.trim()) {
-        Alert.alert("Error", "Please enter email and password");
+      if (!user.trim() || !password.trim()) {
+        Alert.alert("Error", "Please enter email/mobile and password");
         return;
       }
 
       const response = await axios.post(
         "http://192.168.100.169:5000/api/auth/login",
         {
-          email: email,
+          identifier: user, // backend receives email OR mobile
           password: password,
         },
       );
@@ -34,7 +34,7 @@ export default function Login() {
       Alert.alert("Success", response.data.message);
 
       router.replace("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.log("Login Error:", error);
 
       Alert.alert(
@@ -53,18 +53,20 @@ export default function Login() {
           Sign in to manage your academy
         </ThemedText>
 
-        <ThemedText style={styles.label}>Email</ThemedText>
+        {/* USER INPUT (EMAIL OR MOBILE) */}
+        <ThemedText style={styles.label}>Email or Mobile</ThemedText>
 
         <TextInput
-          placeholder="email@example.com"
+          placeholder="email@example.com or 0771234567"
           placeholderTextColor="#94A3B8"
-          keyboardType="email-address"
+          keyboardType="default"
           autoCapitalize="none"
           style={styles.input}
-          value={email}
-          onChangeText={setEmail}
+          value={user}
+          onChangeText={setUser}
         />
 
+        {/* PASSWORD */}
         <ThemedText style={styles.label}>Password</ThemedText>
 
         <TextInput
@@ -76,10 +78,12 @@ export default function Login() {
           onChangeText={setPassword}
         />
 
+        {/* BUTTON */}
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <ThemedText style={styles.buttonText}>Sign In</ThemedText>
         </TouchableOpacity>
 
+        {/* FOOTER */}
         <View style={styles.footer}>
           <ThemedText style={styles.footerText}>
             Don't have an account?
