@@ -21,3 +21,7 @@ app.listen(5000, () => {
 const ageGroupRoutes = require("./routes/ageGroupRoutes");
 
 app.use("/api/agegroups", ageGroupRoutes);
+
+const studentRoutes = require("./routes/studentRoutes");
+
+app.use("/api/students", studentRoutes);
