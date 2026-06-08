@@ -25,3 +25,6 @@ app.use("/api/agegroups", ageGroupRoutes);
 const studentRoutes = require("./routes/studentRoutes");
 
 app.use("/api/students", studentRoutes);
+
+const sessionRoutes = require("./routes/sessionRoutes");
+app.use("/api/sessions", sessionRoutes);
