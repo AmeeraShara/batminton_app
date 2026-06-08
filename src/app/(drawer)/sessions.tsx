@@ -3,16 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function Sessions() {
@@ -382,85 +382,101 @@ export default function Sessions() {
             </Text>
           </View>
 
-          {/* Sessions Table */}
-          <View style={styles.tableContainer}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.headerCell, { flex: 2 }]}>Session Name</Text>
-              <Text style={[styles.headerCell, { flex: 1.5 }]}>Day</Text>
-              <Text style={[styles.headerCell, { flex: 1.5 }]}>Start Time</Text>
-              <Text style={[styles.headerCell, { flex: 1.5 }]}>End Time</Text>
-              <Text style={[styles.headerCell, { flex: 2 }]}>Age Groups</Text>
-              <Text style={[styles.headerCell, { flex: 1 }]}>Actions</Text>
-            </View>
-
-            {filteredSessions.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="calendar-outline" size={50} color="#CBD5E1" />
-                <Text style={styles.emptyText}>No sessions found</Text>
-                <Text style={styles.emptySubText}>
-                  Tap "Add Session" to create one
+          {/* Sessions Table with Scroll Bar */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <View style={styles.tableContainer}>
+              <View style={styles.tableHeader}>
+                <Text style={[styles.headerCell, { width: 200 }]}>
+                  Session Name
                 </Text>
+                <Text style={[styles.headerCell, { width: 120 }]}>Day</Text>
+                <Text style={[styles.headerCell, { width: 120 }]}>
+                  Start Time
+                </Text>
+                <Text style={[styles.headerCell, { width: 120 }]}>
+                  End Time
+                </Text>
+                <Text style={[styles.headerCell, { width: 180 }]}>
+                  Age Groups
+                </Text>
+                <Text style={[styles.headerCell, { width: 100 }]}>Actions</Text>
               </View>
-            ) : (
-              <FlatList
-                data={filteredSessions}
-                keyExtractor={(item) => item.id.toString()}
-                scrollEnabled={false}
-                renderItem={({ item }) => (
-                  <View style={styles.tableRow}>
-                    <Text style={[styles.cell, { flex: 2 }]}>
-                      {item.session_name}
-                    </Text>
-                    <Text style={[styles.cell, { flex: 1.5 }]}>
-                      {item.day_of_week}
-                    </Text>
-                    <Text style={[styles.cell, { flex: 1.5 }]}>
-                      {formatTime(item.start_time)}
-                    </Text>
-                    <Text style={[styles.cell, { flex: 1.5 }]}>
-                      {formatTime(item.end_time)}
-                    </Text>
-                    <Text style={[styles.cell, { flex: 2 }]} numberOfLines={1}>
-                      {getAgeGroupsText(item.age_groups)}
-                    </Text>
-                    <View style={[styles.actionRow, { flex: 1 }]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setEditId(item.id);
-                          setSessionName(item.session_name);
-                          setDayOfWeek(item.day_of_week);
-                          setStartTime(item.start_time.substring(0, 5));
-                          setEndTime(item.end_time.substring(0, 5));
-                          setSelectedAgeGroups(
-                            item.age_groups?.map((ag: any) =>
-                              ag.id.toString(),
-                            ) || [],
-                          );
-                          setModal(true);
-                        }}
+
+              {filteredSessions.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="calendar-outline" size={50} color="#CBD5E1" />
+                  <Text style={styles.emptyText}>No sessions found</Text>
+                  <Text style={styles.emptySubText}>
+                    Tap "Add Session" to create one
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={filteredSessions}
+                  keyExtractor={(item) => item.id.toString()}
+                  scrollEnabled={false}
+                  renderItem={({ item }) => (
+                    <View style={styles.tableRow}>
+                      <Text
+                        style={[styles.cell, { width: 200 }]}
+                        numberOfLines={2}
                       >
-                        <Ionicons
-                          name="create-outline"
-                          size={20}
-                          color="#2563EB"
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={{ marginLeft: 16 }}
-                        onPress={() => remove(item.id)}
+                        {item.session_name}
+                      </Text>
+                      <Text style={[styles.cell, { width: 120 }]}>
+                        {item.day_of_week}
+                      </Text>
+                      <Text style={[styles.cell, { width: 120 }]}>
+                        {formatTime(item.start_time)}
+                      </Text>
+                      <Text style={[styles.cell, { width: 120 }]}>
+                        {formatTime(item.end_time)}
+                      </Text>
+                      <Text
+                        style={[styles.cell, { width: 180 }]}
+                        numberOfLines={2}
                       >
-                        <Ionicons
-                          name="trash-outline"
-                          size={20}
-                          color="#EF4444"
-                        />
-                      </TouchableOpacity>
+                        {getAgeGroupsText(item.age_groups)}
+                      </Text>
+                      <View style={[styles.actionRow, { width: 100 }]}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEditId(item.id);
+                            setSessionName(item.session_name);
+                            setDayOfWeek(item.day_of_week);
+                            setStartTime(item.start_time.substring(0, 5));
+                            setEndTime(item.end_time.substring(0, 5));
+                            setSelectedAgeGroups(
+                              item.age_groups?.map((ag: any) =>
+                                ag.id.toString(),
+                              ) || [],
+                            );
+                            setModal(true);
+                          }}
+                        >
+                          <Ionicons
+                            name="create-outline"
+                            size={20}
+                            color="#2563EB"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ marginLeft: 16 }}
+                          onPress={() => remove(item.id)}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={20}
+                            color="#EF4444"
+                          />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  </View>
-                )}
-              />
-            )}
-          </View>
+                  )}
+                />
+              )}
+            </View>
+          </ScrollView>
         </View>
       </ScrollView>
 
@@ -690,6 +706,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 20,
+    minWidth: 840, // This ensures the table has a minimum width for horizontal scrolling
   },
 
   tableHeader: {
