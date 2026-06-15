@@ -24,9 +24,10 @@ export default function Login() {
       }
 
       const response = await axios.post(
-        "http://192.168.100.169:5000/api/auth/login",
+        "http://10.50.183.182:5000/api/auth/login",
+
         {
-          identifier: user, // backend receives email OR mobile
+          identifier: user,
           password: password,
         },
       );
