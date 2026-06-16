@@ -9,7 +9,6 @@ import {
   FlatList,
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -17,8 +16,8 @@ import {
 } from "react-native";
 
 export default function Sessions() {
-  const API = "http://192.168.100.169:5000/api/sessions";
-  const ageGroupsAPI = "http://192.168.100.169:5000/api/agegroups";
+  const API = "http://192.168.8.102:5000/api/sessions";
+  const ageGroupsAPI = "http://192.168.8.102:5000/api/agegroups";
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
@@ -31,6 +30,14 @@ export default function Sessions() {
   const [endTime, setEndTime] = useState("");
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
+  const [startTimeModal, setStartTimeModal] = useState(false);
+  const [endTimeModal, setEndTimeModal] = useState(false);
+  const [tempHour, setTempHour] = useState("09");
+  const [tempMinute, setTempMinute] = useState("00");
+  const [tempAmPm, setTempAmPm] = useState("AM");
+  const [timePickerTarget, setTimePickerTarget] = useState<"start" | "end">(
+    "start",
+  );
 
   // Filter states
   const [selectedDayFilter, setSelectedDayFilter] = useState("All Days");
@@ -47,6 +54,31 @@ export default function Sessions() {
     "Saturday",
     "Sunday",
   ];
+
+  // Generate hours (1-12)
+  const hours = Array.from({ length: 12 }, (_, i) =>
+    (i + 1).toString().padStart(2, "0"),
+  );
+
+  // Generate minutes (00-59)
+  const minutes = Array.from({ length: 60 }, (_, i) =>
+    i.toString().padStart(2, "0"),
+  );
+
+  const ampmOptions = ["AM", "PM"];
+
+  // Sort age groups in correct order (U-9, U-11, U-13, U-15, U-17)
+  const sortAgeGroups = (groups: any[]) => {
+    const order = ["U-9", "U-11", "U-13", "U-15", "U-17"];
+    return [...groups].sort((a, b) => {
+      const indexA = order.indexOf(a.age_group_name);
+      const indexB = order.indexOf(b.age_group_name);
+      if (indexA === -1 && indexB === -1) return 0;
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  };
 
   useEffect(() => {
     loadData();
@@ -78,15 +110,19 @@ export default function Sessions() {
     try {
       const response = await fetch(ageGroupsAPI);
       const data = await response.json();
-      setAgeGroups(data);
+      // Sort the age groups
+      const sortedData = sortAgeGroups(data);
+      setAgeGroups(sortedData);
     } catch (error) {
       console.log(error);
+      Alert.alert("Error", "Failed to load age groups");
     }
   };
 
   const filterSessions = () => {
-    let filtered = [...sessions];
+    if (!Array.isArray(sessions)) return;
 
+    let filtered = [...sessions];
     // Filter by day
     if (selectedDayFilter !== "All Days") {
       filtered = filtered.filter(
@@ -118,9 +154,57 @@ export default function Sessions() {
     }
   };
 
-  const validateTime = (time: string) => {
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    return timeRegex.test(time);
+  const formatTimeForDisplay = (time: string) => {
+    if (!time) return "--:-- --";
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+  };
+
+  const convertTo24Hour = (hour: string, minute: string, ampm: string) => {
+    let hour24 = parseInt(hour);
+    if (ampm === "PM" && hour24 !== 12) {
+      hour24 += 12;
+    } else if (ampm === "AM" && hour24 === 12) {
+      hour24 = 0;
+    }
+    return `${hour24.toString().padStart(2, "0")}:${minute}`;
+  };
+
+  const openTimePicker = (target: "start" | "end") => {
+    setTimePickerTarget(target);
+    const currentTime = target === "start" ? startTime : endTime;
+    if (currentTime) {
+      const [hours, minutes] = currentTime.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      setTempHour(displayHour.toString().padStart(2, "0"));
+      setTempMinute(minutes);
+      setTempAmPm(ampm);
+    } else {
+      setTempHour("09");
+      setTempMinute("00");
+      setTempAmPm("AM");
+    }
+    if (target === "start") {
+      setStartTimeModal(true);
+    } else {
+      setEndTimeModal(true);
+    }
+  };
+
+  const saveTime = () => {
+    const time24 = convertTo24Hour(tempHour, tempMinute, tempAmPm);
+    if (timePickerTarget === "start") {
+      setStartTime(time24);
+      setStartTimeModal(false);
+    } else {
+      setEndTime(time24);
+      setEndTimeModal(false);
+    }
   };
 
   const saveSession = async () => {
@@ -132,12 +216,12 @@ export default function Sessions() {
       Alert.alert("Error", "Please select day of week");
       return;
     }
-    if (!startTime || !validateTime(startTime)) {
-      Alert.alert("Error", "Please enter valid start time (HH:MM format)");
+    if (!startTime) {
+      Alert.alert("Error", "Please select start time");
       return;
     }
-    if (!endTime || !validateTime(endTime)) {
-      Alert.alert("Error", "Please enter valid end time (HH:MM format)");
+    if (!endTime) {
+      Alert.alert("Error", "Please select end time");
       return;
     }
 
@@ -331,24 +415,6 @@ export default function Sessions() {
                     All Age Groups
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.filterChip,
-                    selectedAgeGroupFilter === "All Groups" &&
-                      styles.filterChipActive,
-                  ]}
-                  onPress={() => setSelectedAgeGroupFilter("All Groups")}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      selectedAgeGroupFilter === "All Groups" &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
-                    All Groups
-                  </Text>
-                </TouchableOpacity>
                 {ageGroups.map((group) => (
                   <TouchableOpacity
                     key={group.id}
@@ -536,26 +602,32 @@ export default function Sessions() {
 
               <View style={styles.timeRow}>
                 <View style={styles.timeField}>
-                  <Text style={styles.label}>Start Time (HH:MM)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="09:00"
-                    value={startTime}
-                    onChangeText={setStartTime}
-                  />
+                  <Text style={styles.label}>Start Time</Text>
+                  <TouchableOpacity
+                    style={styles.timePickerButton}
+                    onPress={() => openTimePicker("start")}
+                  >
+                    <Text style={styles.timePickerButtonText}>
+                      {startTime ? formatTimeForDisplay(startTime) : "--:-- --"}
+                    </Text>
+                    <Ionicons name="time-outline" size={20} color="#2563EB" />
+                  </TouchableOpacity>
                 </View>
                 <View style={styles.timeField}>
-                  <Text style={styles.label}>End Time (HH:MM)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="11:00"
-                    value={endTime}
-                    onChangeText={setEndTime}
-                  />
+                  <Text style={styles.label}>End Time</Text>
+                  <TouchableOpacity
+                    style={styles.timePickerButton}
+                    onPress={() => openTimePicker("end")}
+                  >
+                    <Text style={styles.timePickerButtonText}>
+                      {endTime ? formatTimeForDisplay(endTime) : "--:-- --"}
+                    </Text>
+                    <Ionicons name="time-outline" size={20} color="#2563EB" />
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              <Text style={styles.label}>Age Groups</Text>
+              <Text style={styles.label}>Age Groups (Select multiple)</Text>
               <View style={styles.ageGroupContainer}>
                 {ageGroups.map((group) => (
                   <TouchableOpacity
@@ -585,6 +657,23 @@ export default function Sessions() {
                 )}
               </View>
 
+              {/* Selected Age Groups Summary */}
+              {selectedAgeGroups.length > 0 && (
+                <View style={styles.selectedSummary}>
+                  <Text style={styles.selectedSummaryLabel}>
+                    Selected: {selectedAgeGroups.length} age group(s)
+                  </Text>
+                  <Text style={styles.selectedSummaryText}>
+                    {ageGroups
+                      .filter((g) =>
+                        selectedAgeGroups.includes(g.id.toString()),
+                      )
+                      .map((g) => g.age_group_name)
+                      .join(", ")}
+                  </Text>
+                </View>
+              )}
+
               <TouchableOpacity style={styles.save} onPress={saveSession}>
                 <Text style={styles.saveText}>
                   {editId ? "Update Session" : "Add Session"}
@@ -594,8 +683,146 @@ export default function Sessions() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Start Time Picker Modal */}
+      <Modal
+        transparent
+        visible={startTimeModal}
+        animationType="slide"
+        onRequestClose={() => setStartTimeModal(false)}
+      >
+        <View style={styles.timePickerOverlay}>
+          <View style={styles.timePickerModal}>
+            <Text style={styles.timePickerTitle}>Select Start Time</Text>
+
+            <View style={styles.timePickerRow}>
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>Hour</Text>
+                <Picker
+                  selectedValue={tempHour}
+                  onValueChange={(itemValue) => setTempHour(itemValue)}
+                  style={styles.timePicker}
+                >
+                  {hours.map((hour) => (
+                    <Picker.Item key={hour} label={hour} value={hour} />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>Minute</Text>
+                <Picker
+                  selectedValue={tempMinute}
+                  onValueChange={(itemValue) => setTempMinute(itemValue)}
+                  style={styles.timePicker}
+                >
+                  {minutes.map((minute) => (
+                    <Picker.Item key={minute} label={minute} value={minute} />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>AM/PM</Text>
+                <Picker
+                  selectedValue={tempAmPm}
+                  onValueChange={(itemValue) => setTempAmPm(itemValue)}
+                  style={styles.timePicker}
+                >
+                  {ampmOptions.map((option) => (
+                    <Picker.Item key={option} label={option} value={option} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity
+                style={[styles.timePickerButton, styles.cancelButton]}
+                onPress={() => setStartTimeModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.timePickerButton, styles.confirmButton]}
+                onPress={saveTime}
+              >
+                <Text style={styles.confirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* End Time Picker Modal */}
+      <Modal
+        transparent
+        visible={endTimeModal}
+        animationType="slide"
+        onRequestClose={() => setEndTimeModal(false)}
+      >
+        <View style={styles.timePickerOverlay}>
+          <View style={styles.timePickerModal}>
+            <Text style={styles.timePickerTitle}>Select End Time</Text>
+
+            <View style={styles.timePickerRow}>
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>Hour</Text>
+                <Picker
+                  selectedValue={tempHour}
+                  onValueChange={(itemValue) => setTempHour(itemValue)}
+                  style={styles.timePicker}
+                >
+                  {hours.map((hour) => (
+                    <Picker.Item key={hour} label={hour} value={hour} />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>Minute</Text>
+                <Picker
+                  selectedValue={tempMinute}
+                  onValueChange={(itemValue) => setTempMinute(itemValue)}
+                  style={styles.timePicker}
+                >
+                  {minutes.map((minute) => (
+                    <Picker.Item key={minute} label={minute} value={minute} />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>AM/PM</Text>
+                <Picker
+                  selectedValue={tempAmPm}
+                  onValueChange={(itemValue) => setTempAmPm(itemValue)}
+                  style={styles.timePicker}
+                >
+                  {ampmOptions.map((option) => (
+                    <Picker.Item key={option} label={option} value={option} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity
+                style={[styles.timePickerButton, styles.cancelButton]}
+                onPress={() => setEndTimeModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.timePickerButton, styles.confirmButton]}
+                onPress={saveTime}
+              >
+                <Text style={styles.confirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-
