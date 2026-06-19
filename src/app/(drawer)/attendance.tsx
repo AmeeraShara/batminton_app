@@ -1,9 +1,9 @@
 import { Text, View } from "react-native";
 
-export default function AgeGroup() {
+export default function Attendance() {
   return (
     <View>
-      <Text>Age Group Screen</Text>
+      <Text>Attendance Screen</Text>
     </View>
   );
 }

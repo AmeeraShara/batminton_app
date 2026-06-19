@@ -3,7 +3,8 @@ import { StyleSheet } from "react-native";
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 20,
   },
 
   content: {
@@ -44,7 +45,7 @@ export default StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* Header */
+  /* Header (MATCHED) */
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -55,7 +56,6 @@ export default StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: "700",
-    color: "#111827",
   },
 
   sub: {
@@ -67,9 +67,9 @@ export default StyleSheet.create({
     backgroundColor: "#2563EB",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 10,
   },
 
   addTxt: {
@@ -131,7 +131,7 @@ export default StyleSheet.create({
     color: "#111827",
   },
 
-  /* Table */
+  /* Table (MATCHED STYLE) */
   tableContainer: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -141,7 +141,7 @@ export default StyleSheet.create({
 
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F8FAFC",
     padding: 15,
   },
 
@@ -154,7 +154,7 @@ export default StyleSheet.create({
     flexDirection: "row",
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F1F5F9",
   },
 
   cell: {
@@ -184,10 +184,10 @@ export default StyleSheet.create({
     marginTop: 5,
   },
 
-  /* Modal */
+  /* Modal (MATCHED STYLE) */
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
   },
 
@@ -211,7 +211,7 @@ export default StyleSheet.create({
   },
 
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
     color: "#111827",
   },
@@ -226,7 +226,7 @@ export default StyleSheet.create({
 
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#E5E7EB",
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
@@ -234,7 +234,7 @@ export default StyleSheet.create({
 
   pickerContainer: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#E5E7EB",
     borderRadius: 12,
     marginBottom: 12,
     overflow: "hidden",
@@ -257,7 +257,7 @@ export default StyleSheet.create({
 
   timePickerButton: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#E5E7EB",
     borderRadius: 12,
     padding: 14,
     flexDirection: "row",
@@ -319,25 +319,25 @@ export default StyleSheet.create({
     color: "#374151",
   },
 
-  /* Save */
+  /* Save Button (MATCHED STYLE) */
   save: {
     backgroundColor: "#2563EB",
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: "center",
     marginTop: 10,
   },
 
   saveText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "600",
   },
 
   /* Time Picker Modal */
   timePickerOverlay: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
 
   timePickerModal: {

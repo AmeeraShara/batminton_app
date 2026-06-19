@@ -367,8 +367,8 @@ export default function Sessions() {
         <View style={styles.content}>
           <View style={styles.top}>
             <View>
-              <Text style={styles.title}>Practice Sessions</Text>
-              <Text style={styles.sub}>Manage practice session schedules</Text>
+              <Text style={styles.title}> Sessions</Text>
+              <Text style={styles.sub}>Manage session schedules</Text>
             </View>
 
             <TouchableOpacity
