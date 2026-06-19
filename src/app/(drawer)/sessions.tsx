@@ -15,13 +15,30 @@ import {
   View,
 } from "react-native";
 
+// Define types
+interface AgeGroup {
+  id: number;
+  age_group_name: string;
+}
+
+interface Session {
+  id: number;
+  session_name: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  age_group_ids: string;
+  age_group_names: string[];
+  age_groups?: number[];
+}
+
 export default function Sessions() {
   const API = "http://192.168.8.102:5000/api/sessions";
   const ageGroupsAPI = "http://192.168.8.102:5000/api/agegroups";
 
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
-  const [ageGroups, setAgeGroups] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
+  const [ageGroups, setAgeGroups] = useState<AgeGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [sessionName, setSessionName] = useState("");
@@ -68,7 +85,7 @@ export default function Sessions() {
   const ampmOptions = ["AM", "PM"];
 
   // Sort age groups in correct order (U-9, U-11, U-13, U-15, U-17)
-  const sortAgeGroups = (groups: any[]) => {
+  const sortAgeGroups = (groups: AgeGroup[]) => {
     const order = ["U-9", "U-11", "U-13", "U-15", "U-17"];
     return [...groups].sort((a, b) => {
       const indexA = order.indexOf(a.age_group_name);
@@ -133,13 +150,9 @@ export default function Sessions() {
     // Filter by age group
     if (selectedAgeGroupFilter !== "All Age Groups") {
       filtered = filtered.filter((session) => {
-        const sessionAgeGroups =
-          session.age_groups?.map((ag: any) => ag.age_group_name) || [];
-        return (
-          sessionAgeGroups.includes(selectedAgeGroupFilter) ||
-          (sessionAgeGroups.length === 0 &&
-            selectedAgeGroupFilter === "All Groups")
-        );
+        // Use age_group_names array from the formatted data
+        const sessionAgeGroups = session.age_group_names || [];
+        return sessionAgeGroups.includes(selectedAgeGroupFilter);
       });
     }
 
@@ -225,16 +238,17 @@ export default function Sessions() {
       return;
     }
 
+    // Prepare data with age_groups field
+    const sessionData = {
+      session_name: sessionName,
+      day_of_week: dayOfWeek,
+      start_time: startTime,
+      end_time: endTime,
+      age_groups: selectedAgeGroups.map((id) => parseInt(id))
+    };
+
     try {
       let response;
-      const sessionData = {
-        session_name: sessionName,
-        day_of_week: dayOfWeek,
-        start_time: startTime,
-        end_time: endTime,
-        age_group_ids: selectedAgeGroups.map((id) => parseInt(id)),
-      };
-
       if (editId) {
         response = await fetch(`${API}/${editId}`, {
           method: "PUT",
@@ -252,7 +266,7 @@ export default function Sessions() {
       if (response.ok) {
         setModal(false);
         resetForm();
-        loadSessions();
+        await loadSessions();
         Alert.alert(
           "Success",
           `Session ${editId ? "updated" : "created"} successfully`,
@@ -291,7 +305,7 @@ export default function Sessions() {
                 method: "DELETE",
               });
               if (response.ok) {
-                loadSessions();
+                await loadSessions();
                 Alert.alert("Success", "Session deleted successfully");
               } else {
                 Alert.alert("Error", "Failed to delete session");
@@ -315,9 +329,23 @@ export default function Sessions() {
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
-  const getAgeGroupsText = (ageGroupsList: any[]) => {
-    if (!ageGroupsList || ageGroupsList.length === 0) return "All Groups";
-    return ageGroupsList.map((ag: any) => ag.age_group_name).join(", ");
+  // Fixed: Properly display age group names
+  const getAgeGroupsText = (ageGroupNames: string[] | string | undefined) => {
+    if (!ageGroupNames) return "All Groups";
+    
+    // If it's a string (comma-separated from database)
+    if (typeof ageGroupNames === 'string') {
+      const names = ageGroupNames.split(',').map(name => name.trim()).filter(name => name.length > 0);
+      return names.length > 0 ? names.join(', ') : 'All Groups';
+    }
+    
+    // If it's an array
+    if (Array.isArray(ageGroupNames)) {
+      const validNames = ageGroupNames.filter(name => name && name.trim().length > 0);
+      return validNames.length > 0 ? validNames.join(', ') : 'All Groups';
+    }
+    
+    return 'All Groups';
   };
 
   if (loading) {
@@ -503,7 +531,7 @@ export default function Sessions() {
                         style={[styles.cell, { width: 180 }]}
                         numberOfLines={2}
                       >
-                        {getAgeGroupsText(item.age_groups)}
+                        {getAgeGroupsText(item.age_group_names)}
                       </Text>
                       <View style={[styles.actionRow, { width: 100 }]}>
                         <TouchableOpacity
@@ -513,11 +541,12 @@ export default function Sessions() {
                             setDayOfWeek(item.day_of_week);
                             setStartTime(item.start_time.substring(0, 5));
                             setEndTime(item.end_time.substring(0, 5));
-                            setSelectedAgeGroups(
-                              item.age_groups?.map((ag: any) =>
-                                ag.id.toString(),
-                              ) || [],
-                            );
+                            
+                            // Parse age_group_ids for editing
+                            const ageGroupIds = item.age_group_ids 
+                              ? item.age_group_ids.split(',').map((id: string) => id.trim()).filter(id => id.length > 0)
+                              : [];
+                            setSelectedAgeGroups(ageGroupIds);
                             setModal(true);
                           }}
                         >
