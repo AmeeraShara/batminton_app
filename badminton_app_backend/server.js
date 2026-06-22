@@ -18,13 +18,18 @@ app.listen(5000, () => {
   console.log("Server Running on Port 5000");
 });
 
+//Age
 const ageGroupRoutes = require("./routes/ageGroupRoutes");
-
 app.use("/api/agegroups", ageGroupRoutes);
 
+//Student
 const studentRoutes = require("./routes/studentRoutes");
-
 app.use("/api/students", studentRoutes);
 
+//Session
 const sessionRoutes = require("./routes/sessionRoutes");
 app.use("/api/sessions", sessionRoutes);
+
+//Attendance
+const attendanceRoutes = require("./routes/attendanceRoutes");
+app.use("/api/attendance", attendanceRoutes);
