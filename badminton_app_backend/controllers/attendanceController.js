@@ -52,13 +52,21 @@ exports.saveAttendance = (req, res) => {
     return res.status(400).json({ error: "Date is required" });
   }
 
+  // Normalize status to match enum values (Present/Absent)
+  let status = data.status || "Present";
+  if (status.toLowerCase() === 'present') {
+    status = 'Present';
+  } else if (status.toLowerCase() === 'absent') {
+    status = 'Absent';
+  }
+
   // Prepare values for bulk insert
   const values = data.student_ids.map((studentId) => [
     parseInt(studentId),
     parseInt(data.session_id),
     data.age_group_id ? parseInt(data.age_group_id) : null,
     data.date,
-    data.status || "present",
+    status,
     data.remarks || null
   ]);
 
@@ -98,33 +106,51 @@ exports.getStudentAttendance = (req, res) => {
     return res.status(400).json({ error: "Invalid student ID" });
   }
 
-  const query = `
-    SELECT 
-      a.id,
-      a.attendance_date,
-      a.status,
-      a.remarks,
-      a.created_at,
-      s.session_name,
-      s.day_of_week,
-      s.start_time,
-      s.end_time
-    FROM attendance a
-    JOIN sessions s ON a.session_id = s.id
-    WHERE a.student_id = ?
-    ORDER BY a.attendance_date DESC, a.created_at DESC
-  `;
-
-  db.query(query, [parseInt(studentId)], (err, results) => {
+  // First check if student exists
+  const checkStudentQuery = "SELECT id FROM students WHERE id = ?";
+  db.query(checkStudentQuery, [parseInt(studentId)], (err, studentResult) => {
     if (err) {
-      console.error("Error in getStudentAttendance:", err);
+      console.error("Error checking student:", err);
       return res.status(500).json({ 
         error: "Database error", 
         details: err.message 
       });
     }
-    console.log(`Found ${results?.length || 0} attendance records for student ${studentId}`);
-    res.json(results || []);
+
+    if (!studentResult || studentResult.length === 0) {
+      console.log(`Student ${studentId} not found`);
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const query = `
+      SELECT 
+        a.id,
+        a.attendance_date,
+        a.status,
+        a.remarks,
+        a.created_at,
+        s.session_name,
+        s.day_of_week,
+        s.start_time,
+        s.end_time
+      FROM attendance a
+      JOIN sessions s ON a.session_id = s.id
+      WHERE a.student_id = ?
+      ORDER BY a.attendance_date DESC, a.created_at DESC
+    `;
+
+    db.query(query, [parseInt(studentId)], (err, results) => {
+      if (err) {
+        console.error("Error in getStudentAttendance query:", err);
+        console.error("SQL Error:", err.sqlMessage);
+        return res.status(500).json({ 
+          error: "Database error", 
+          details: err.message 
+        });
+      }
+      console.log(`Found ${results?.length || 0} attendance records for student ${studentId}`);
+      res.json(results || []);
+    });
   });
 };
 

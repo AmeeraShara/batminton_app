@@ -14,8 +14,18 @@ import {
   View,
 } from "react-native";
 
+// Type guard for error handling
+function isErrorWithMessage(error: unknown): error is { message: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>).message === 'string'
+  );
+}
+
 export default function Attendance() {
-  // API URLs - FIXED duplicate declaration
+  // API URLs
   const API = "http://192.168.8.102:5000/api/attendance";
   const SESSIONS_API = "http://192.168.8.102:5000/api/sessions";
   const AGE_GROUPS_API = "http://192.168.8.102:5000/api/agegroups";
@@ -168,7 +178,7 @@ export default function Attendance() {
         student_ids: selectedStudents,
         age_group_id: selectedAgeGroup ? parseInt(selectedAgeGroup) : null,
         date: markingDate.toISOString().split("T")[0],
-        status: "present",
+        status: "Present", // Capitalized to match database enum
         remarks: null,
       };
 
@@ -215,21 +225,48 @@ export default function Attendance() {
 
   const loadAttendanceHistory = async (studentId: number) => {
     try {
-      // Corrected URL - matches backend route /student/:studentId
       const url = `${API}/student/${studentId}`;
       console.log("Fetching attendance history from:", url);
       
       const response = await fetch(url);
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+          console.error("Server error details:", errorData);
+        } catch (e) {
+          // If response is not JSON, try to get text
+          try {
+            const text = await response.text();
+            if (text) {
+              errorMessage = text;
+              console.error("Error response body:", text);
+            }
+          } catch (textError) {
+            // Ignore text parsing errors
+          }
+        }
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
+      console.log("Attendance history data:", data);
       setAttendanceHistory(data || []);
     } catch (error) {
       console.error("Error loading attendance history:", error);
       setAttendanceHistory([]);
-      Alert.alert("Error", "Failed to load attendance history");
+      
+      // Safe error message extraction
+      let errorMessage = "Failed to load attendance history";
+      if (isErrorWithMessage(error)) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      Alert.alert("Error", errorMessage);
     }
   };
 
@@ -260,7 +297,7 @@ export default function Attendance() {
       markingDate.toLocaleDateString("en-US", { weekday: "long" }),
   );
 
-  // Calendar functions - returns array of weeks (each week is array of 7 days)
+  // Calendar functions
   const getCalendarWeeks = (month: number, year: number) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
@@ -270,23 +307,18 @@ export default function Attendance() {
     const weeks = [];
     let currentWeek = [];
 
-    // Add empty cells for days before the first day of month
     for (let i = 0; i < startDayOfWeek; i++) {
       currentWeek.push(null);
     }
 
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       currentWeek.push(day);
-
-      // If we have 7 days in the week, start a new week
       if (currentWeek.length === 7) {
         weeks.push(currentWeek);
         currentWeek = [];
       }
     }
 
-    // Add remaining empty cells to complete the last week
     if (currentWeek.length > 0) {
       while (currentWeek.length < 7) {
         currentWeek.push(null);
@@ -297,13 +329,8 @@ export default function Attendance() {
     return weeks;
   };
 
-  // Get attendance status for a specific day
   const getAttendanceStatus = (day: number, month: number, year: number) => {
-    if (
-      !selectedStudent ||
-      !attendanceHistory ||
-      attendanceHistory.length === 0
-    )
+    if (!selectedStudent || !attendanceHistory || attendanceHistory.length === 0)
       return null;
 
     const date = new Date(year, month, day);
@@ -322,17 +349,16 @@ export default function Attendance() {
     return null;
   };
 
-  // Get attendance statistics for the year
   const getYearlyAttendanceStats = () => {
     if (!attendanceHistory || attendanceHistory.length === 0) {
       return { present: 0, absent: 0, total: 0, percentage: 0 };
     }
 
     const present = attendanceHistory.filter(
-      (h) => h.status === "present" || h.status === "Present",
+      (h) => h.status === "Present"
     ).length;
     const absent = attendanceHistory.filter(
-      (h) => h.status === "absent" || h.status === "Absent",
+      (h) => h.status === "Absent"
     ).length;
     const total = attendanceHistory.length;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
@@ -340,7 +366,6 @@ export default function Attendance() {
     return { present, absent, total, percentage };
   };
 
-  // Get monthly statistics
   const getMonthlyStats = (month: number, year: number) => {
     if (!attendanceHistory || attendanceHistory.length === 0) {
       return { present: 0, absent: 0, total: 0 };
@@ -353,10 +378,10 @@ export default function Attendance() {
     });
 
     const present = monthRecords.filter((h) => 
-      h.status === "present" || h.status === "Present"
+      h.status === "Present"
     ).length;
     const absent = monthRecords.filter((h) => 
-      h.status === "absent" || h.status === "Absent"
+      h.status === "Absent"
     ).length;
     const total = monthRecords.length;
 
@@ -364,18 +389,8 @@ export default function Attendance() {
   };
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
   ];
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -488,26 +503,19 @@ export default function Attendance() {
                     <Ionicons name="chevron-back" size={24} color="#2563EB" />
                   </TouchableOpacity>
                   <Text style={styles.calendarMonthText}>
-                    {monthNames[markingDate.getMonth()]}{" "}
-                    {markingDate.getFullYear()}
+                    {monthNames[markingDate.getMonth()]} {markingDate.getFullYear()}
                   </Text>
                   <TouchableOpacity
                     onPress={() => changeMonth(1)}
                     style={styles.calendarNav}
                   >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={24}
-                      color="#2563EB"
-                    />
+                    <Ionicons name="chevron-forward" size={24} color="#2563EB" />
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.weekDaysRow}>
                   {weekDays.map((day) => (
-                    <Text key={day} style={styles.weekDayText}>
-                      {day}
-                    </Text>
+                    <Text key={day} style={styles.weekDayText}>{day}</Text>
                   ))}
                 </View>
 
@@ -525,8 +533,7 @@ export default function Attendance() {
                         const isToday =
                           day === new Date().getDate() &&
                           markingDate.getMonth() === new Date().getMonth() &&
-                          markingDate.getFullYear() ===
-                            new Date().getFullYear();
+                          markingDate.getFullYear() === new Date().getFullYear();
                         const isSelected = day === markingDate.getDate();
 
                         return (
@@ -536,13 +543,11 @@ export default function Attendance() {
                               styles.calendarDay,
                               day === null && styles.calendarDayEmpty,
                               isSelected && styles.calendarDaySelected,
-                              status === "present" && styles.calendarDayPresent,
-                              status === "absent" && styles.calendarDayAbsent,
+                              status === "Present" && styles.calendarDayPresent,
+                              status === "Absent" && styles.calendarDayAbsent,
                               isToday && !isSelected && styles.calendarDayToday,
                             ]}
-                            onPress={() =>
-                              day !== null && handleDateSelect(day)
-                            }
+                            onPress={() => day !== null && handleDateSelect(day)}
                             disabled={day === null}
                           >
                             <Text
@@ -550,13 +555,9 @@ export default function Attendance() {
                                 styles.calendarDayText,
                                 isSelected && styles.calendarDayTextSelected,
                                 day === null && styles.calendarDayTextEmpty,
-                                status === "present" &&
-                                  styles.calendarDayTextPresent,
-                                status === "absent" &&
-                                  styles.calendarDayTextAbsent,
-                                isToday &&
-                                  !isSelected &&
-                                  styles.calendarDayTextToday,
+                                status === "Present" && styles.calendarDayTextPresent,
+                                status === "Absent" && styles.calendarDayTextAbsent,
+                                isToday && !isSelected && styles.calendarDayTextToday,
                               ]}
                             >
                               {day || ""}
@@ -583,9 +584,7 @@ export default function Attendance() {
                     <Text style={styles.legendText}>Today</Text>
                   </View>
                   <View style={styles.legendItem}>
-                    <View
-                      style={[styles.legendDot, styles.legendDotSelected]}
-                    />
+                    <View style={[styles.legendDot, styles.legendDotSelected]} />
                     <Text style={styles.legendText}>Selected</Text>
                   </View>
                 </View>
@@ -647,10 +646,7 @@ export default function Attendance() {
           </View>
 
           {/* Select All */}
-          <TouchableOpacity
-            style={styles.selectAll}
-            onPress={toggleAllStudents}
-          >
+          <TouchableOpacity style={styles.selectAll} onPress={toggleAllStudents}>
             <View style={styles.checkbox}>
               {selectedStudents.length === filteredStudents.length &&
                 filteredStudents.length > 0 && (
@@ -680,8 +676,7 @@ export default function Attendance() {
                 <View style={styles.studentInfo}>
                   <Text style={styles.studentName}>{item.student_name}</Text>
                   <Text style={styles.studentMeta}>
-                    {item.registration_number} ·{" "}
-                    {item.age_group_name || "No Group"}
+                    {item.registration_number} · {item.age_group_name || "No Group"}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -701,9 +696,7 @@ export default function Attendance() {
               selectedStudents.length === 0 && styles.markBtnDisabled,
             ]}
             onPress={markAttendance}
-            disabled={
-              selectedStudents.length === 0 || sessionForDay.length === 0
-            }
+            disabled={selectedStudents.length === 0 || sessionForDay.length === 0}
           >
             <Text style={styles.markBtnText}>
               Mark Attendance ({selectedStudents.length})
@@ -781,23 +774,13 @@ export default function Attendance() {
                     </Text>
                     <View style={styles.historyMonthStats}>
                       <View style={styles.historyStatItem}>
-                        <View
-                          style={[
-                            styles.historyStatDot,
-                            styles.historyStatPresent,
-                          ]}
-                        />
+                        <View style={[styles.historyStatDot, styles.historyStatPresent]} />
                         <Text style={styles.historyStatText}>
                           {monthStats.present} present
                         </Text>
                       </View>
                       <View style={styles.historyStatItem}>
-                        <View
-                          style={[
-                            styles.historyStatDot,
-                            styles.historyStatAbsent,
-                          ]}
-                        />
+                        <View style={[styles.historyStatDot, styles.historyStatAbsent]} />
                         <Text style={styles.historyStatText}>
                           {monthStats.absent} absent
                         </Text>
@@ -808,11 +791,7 @@ export default function Attendance() {
                     onPress={() => changeHistoryMonth(1)}
                     style={styles.historyNavButton}
                   >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={24}
-                      color="#2563EB"
-                    />
+                    <Ionicons name="chevron-forward" size={24} color="#2563EB" />
                   </TouchableOpacity>
                 </View>
 
@@ -820,9 +799,7 @@ export default function Attendance() {
                 <View style={styles.historyCalendarContainer}>
                   <View style={styles.weekDaysRow}>
                     {weekDays.map((day) => (
-                      <Text key={day} style={styles.historyWeekDayText}>
-                        {day}
-                      </Text>
+                      <Text key={day} style={styles.historyWeekDayText}>{day}</Text>
                     ))}
                   </View>
 
@@ -831,11 +808,7 @@ export default function Attendance() {
                       <View key={weekIndex} style={styles.calendarWeek}>
                         {week.map((day, dayIndex) => {
                           const status = day
-                            ? getAttendanceStatus(
-                                day,
-                                historyMonth,
-                                historyYear,
-                              )
+                            ? getAttendanceStatus(day, historyMonth, historyYear)
                             : null;
                           const isToday =
                             day === new Date().getDate() &&
@@ -848,9 +821,8 @@ export default function Attendance() {
                               style={[
                                 styles.historyDay,
                                 day === null && styles.calendarDayEmpty,
-                                status === "present" &&
-                                  styles.historyDayPresent,
-                                status === "absent" && styles.historyDayAbsent,
+                                status === "Present" && styles.historyDayPresent,
+                                status === "Absent" && styles.historyDayAbsent,
                                 isToday && !status && styles.historyDayToday,
                               ]}
                             >
@@ -858,13 +830,9 @@ export default function Attendance() {
                                 style={[
                                   styles.historyDayText,
                                   day === null && styles.calendarDayTextEmpty,
-                                  status === "present" &&
-                                    styles.historyDayTextPresent,
-                                  status === "absent" &&
-                                    styles.historyDayTextAbsent,
-                                  isToday &&
-                                    !status &&
-                                    styles.historyDayTextToday,
+                                  status === "Present" && styles.historyDayTextPresent,
+                                  status === "Absent" && styles.historyDayTextAbsent,
+                                  isToday && !status && styles.historyDayTextToday,
                                 ]}
                               >
                                 {day || ""}
