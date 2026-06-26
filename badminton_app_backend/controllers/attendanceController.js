@@ -1,3 +1,4 @@
+// attendanceController.js
 const db = require("../config/db");
 
 // Get all attendance
@@ -28,7 +29,7 @@ exports.getAttendance = (req, res) => {
   });
 };
 
-// Save attendance
+// Save attendance with duplicate check
 exports.saveAttendance = (req, res) => {
   const data = req.body;
 
@@ -59,35 +60,66 @@ exports.saveAttendance = (req, res) => {
     dateStr = dateStr.split('T')[0];
   }
 
-  // Prepare values for bulk insert
-  const values = data.student_ids.map((studentId) => [
-    parseInt(studentId),
-    parseInt(data.session_id),
-    data.age_group_id ? parseInt(data.age_group_id) : null,
-    dateStr,
-    status,
-    data.remarks || null
-  ]);
-
-  const query = `
-    INSERT INTO attendance 
-      (student_id, session_id, age_group_id, attendance_date, status, remarks)
-    VALUES ?
+  // Check for existing attendance records first
+  const studentIds = data.student_ids.map(id => parseInt(id));
+  const checkQuery = `
+    SELECT student_id, attendance_date, session_id 
+    FROM attendance 
+    WHERE student_id IN (?) 
+    AND attendance_date = ? 
+    AND session_id = ?
   `;
 
-  db.query(query, [values], (err, result) => {
-    if (err) {
-      console.error("Error in saveAttendance:", err);
+  db.query(checkQuery, [studentIds, dateStr, parseInt(data.session_id)], (checkErr, existingRecords) => {
+    if (checkErr) {
+      console.error("Error checking existing attendance:", checkErr);
       return res.status(500).json({ 
         error: "Database error", 
-        details: err.message 
+        details: checkErr.message 
       });
     }
 
-    res.json({
-      success: true,
-      message: "Attendance saved successfully",
-      insertedCount: result?.affectedRows || 0
+    // Filter out students who already have attendance for this date and session
+    const existingStudentIds = existingRecords.map(record => record.student_id);
+    const newStudentIds = data.student_ids.filter(id => !existingStudentIds.includes(parseInt(id)));
+
+    if (newStudentIds.length === 0) {
+      return res.status(400).json({ 
+        error: "Attendance already marked for all selected students on this date and session" 
+      });
+    }
+
+    // Prepare values for bulk insert (only for new students)
+    const values = newStudentIds.map((studentId) => [
+      parseInt(studentId),
+      parseInt(data.session_id),
+      data.age_group_id ? parseInt(data.age_group_id) : null,
+      dateStr,
+      status,
+      data.remarks || null
+    ]);
+
+    const insertQuery = `
+      INSERT INTO attendance 
+        (student_id, session_id, age_group_id, attendance_date, status, remarks)
+      VALUES ?
+    `;
+
+    db.query(insertQuery, [values], (err, result) => {
+      if (err) {
+        console.error("Error in saveAttendance:", err);
+        return res.status(500).json({ 
+          error: "Database error", 
+          details: err.message 
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Attendance saved successfully for ${newStudentIds.length} student(s)`,
+        insertedCount: result?.affectedRows || 0,
+        skippedStudents: existingStudentIds
+      });
     });
   });
 };
@@ -152,7 +184,7 @@ exports.deleteAttendance = (req, res) => {
       return res.status(404).json({ error: "Attendance record not found" });
     }
 
-    console.log(` Attendance deleted: ID ${id}`);
+    console.log(`Attendance deleted: ID ${id}`);
     res.json({ 
       success: true, 
       message: "Attendance record deleted successfully" 

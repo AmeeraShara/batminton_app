@@ -1,3 +1,4 @@
+// attendance.tsx
 import AppHeader from "@/components/AppHeader";
 import styles from "@/styles/attendance.styles";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,6 +54,19 @@ export default function Attendance() {
   // History month/year state
   const [historyMonth, setHistoryMonth] = useState(new Date().getMonth());
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
+
+  // Month names for the selector
+  const monthNames = [
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+  ];
+  
+  const fullMonthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   useEffect(() => {
     loadData();
@@ -174,7 +188,6 @@ export default function Attendance() {
     }
 
     try {
-      // Format date as YYYY-MM-DD without timezone
       const year = markingDate.getFullYear();
       const month = String(markingDate.getMonth() + 1).padStart(2, "0");
       const day = String(markingDate.getDate()).padStart(2, "0");
@@ -198,18 +211,19 @@ export default function Attendance() {
         body: JSON.stringify(requestBody),
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        throw new Error("Server returned non-JSON response");
-      }
-
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert("Success", "Attendance marked successfully!");
+        let message = `Attendance marked successfully for ${data.insertedCount || selectedStudents.length} student(s)`;
+        if (data.skippedStudents && data.skippedStudents.length > 0) {
+          message += `\n${data.skippedStudents.length} student(s) already had attendance marked for this session on this date.`;
+        }
+        Alert.alert("Success", message);
         setSelectedStudents([]);
         await loadStudents();
+        if (selectedStudent) {
+          await loadAttendanceHistory(selectedStudent.id);
+        }
       } else {
         Alert.alert(
           "Error",
@@ -226,7 +240,7 @@ export default function Attendance() {
 
   const viewStudentDetails = async (student: any) => {
     setSelectedStudent(student);
-    setAttendanceHistory([]); 
+    setAttendanceHistory([]);
     await loadAttendanceHistory(student.id);
     setDetailModal(true);
   };
@@ -234,7 +248,6 @@ export default function Attendance() {
   const loadAttendanceHistory = async (studentId: number) => {
     try {
       const url = `${API}/student/${studentId}`;
-
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -257,14 +270,12 @@ export default function Attendance() {
       setAttendanceHistory(data || []);
     } catch (error) {
       setAttendanceHistory([]);
-
       let errorMessage = "Failed to load attendance history";
       if (isErrorWithMessage(error)) {
         errorMessage = error.message;
       } else if (typeof error === "string") {
         errorMessage = error;
       }
-
       Alert.alert("Error", errorMessage);
     }
   };
@@ -285,7 +296,6 @@ export default function Attendance() {
       markingDate.toLocaleDateString("en-US", { weekday: "long" }),
   );
 
-  // Calendar functions
   const getCalendarWeeks = (month: number, year: number) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
@@ -318,19 +328,13 @@ export default function Attendance() {
   };
 
   const getAttendanceStatus = (day: number, month: number, year: number) => {
-    if (
-      !selectedStudent ||
-      !attendanceHistory ||
-      attendanceHistory.length === 0
-    )
+    if (!selectedStudent || !attendanceHistory || attendanceHistory.length === 0)
       return null;
 
-    // Format the date without timezone
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
     const record = attendanceHistory.find((h) => {
       if (!h.attendance_date) return false;
-      // Parse the record date and format without timezone
       const recordDate = new Date(h.attendance_date);
       const recordDateStr = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, "0")}-${String(recordDate.getDate()).padStart(2, "0")}`;
       return recordDateStr === dateStr;
@@ -376,22 +380,6 @@ export default function Attendance() {
 
     return { present, absent, total };
   };
-
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const handleDateSelect = (day: number) => {
     const newDate = new Date(
@@ -443,6 +431,47 @@ export default function Attendance() {
   );
   const monthStats = getMonthlyStats(historyMonth, historyYear);
 
+  // Render month selector buttons
+  const renderMonthSelector = () => {
+    return (
+      <View style={styles.historyNavigation}>
+        <TouchableOpacity
+          onPress={() => changeHistoryMonth(-1)}
+          style={styles.historyNavButton}
+        >
+          <Ionicons name="chevron-back" size={24} color="#2563EB" />
+        </TouchableOpacity>
+
+        <View style={styles.historyMonthInfo}>
+          <Text style={styles.historyMonthText}>
+            {fullMonthNames[historyMonth]} {historyYear}
+          </Text>
+          <View style={styles.historyMonthStats}>
+            <View style={styles.historyStatItem}>
+              <View style={[styles.historyStatDot, styles.historyStatPresent]} />
+              <Text style={styles.historyStatText}>
+                {monthStats.present} present
+              </Text>
+            </View>
+            <View style={styles.historyStatItem}>
+              <View style={[styles.historyStatDot, styles.historyStatAbsent]} />
+              <Text style={styles.historyStatText}>
+                {monthStats.absent} absent
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => changeHistoryMonth(1)}
+          style={styles.historyNavButton}
+        >
+          <Ionicons name="chevron-forward" size={24} color="#2563EB" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <AppHeader />
@@ -458,7 +487,6 @@ export default function Attendance() {
             </View>
           </View>
 
-          {/* Session Dropdown */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SESSION</Text>
             <View style={styles.dropdownCard}>
@@ -480,7 +508,6 @@ export default function Attendance() {
             </View>
           </View>
 
-          {/* Marking Date with Calendar */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>MARKING DATE</Text>
 
@@ -511,18 +538,13 @@ export default function Attendance() {
                     <Ionicons name="chevron-back" size={24} color="#2563EB" />
                   </TouchableOpacity>
                   <Text style={styles.calendarMonthText}>
-                    {monthNames[markingDate.getMonth()]}{" "}
-                    {markingDate.getFullYear()}
+                    {fullMonthNames[markingDate.getMonth()]} {markingDate.getFullYear()}
                   </Text>
                   <TouchableOpacity
                     onPress={() => changeMonth(1)}
                     style={styles.calendarNav}
                   >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={24}
-                      color="#2563EB"
-                    />
+                    <Ionicons name="chevron-forward" size={24} color="#2563EB" />
                   </TouchableOpacity>
                 </View>
 
@@ -605,17 +627,12 @@ export default function Attendance() {
                     <Text style={styles.legendText}>Today</Text>
                   </View>
                   <View style={styles.legendItem}>
-                    <View
-                      style={[styles.legendDot, styles.legendDotSelected]}
-                    />
+                    <View style={[styles.legendDot, styles.legendDotSelected]} />
                     <Text style={styles.legendText}>Selected</Text>
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.todayButton}
-                  onPress={goToToday}
-                >
+                <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
                   <Text style={styles.todayButtonText}>Go to Today</Text>
                 </TouchableOpacity>
               </View>
@@ -631,7 +648,6 @@ export default function Attendance() {
             )}
           </View>
 
-          {/* Age Group and Search */}
           <View style={styles.controlsSection}>
             <View style={styles.ageGroupRow}>
               <Text style={styles.sectionLabel}>AGE GROUP</Text>
@@ -657,7 +673,7 @@ export default function Attendance() {
               <Ionicons name="search-outline" size={20} color="#94A3B8" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search..."
+                placeholder="Search students..."
                 placeholderTextColor="#94A3B8"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -665,11 +681,7 @@ export default function Attendance() {
             </View>
           </View>
 
-          {/* Select All */}
-          <TouchableOpacity
-            style={styles.selectAll}
-            onPress={toggleAllStudents}
-          >
+          <TouchableOpacity style={styles.selectAll} onPress={toggleAllStudents}>
             <View style={styles.checkbox}>
               {selectedStudents.length === filteredStudents.length &&
                 filteredStudents.length > 0 && (
@@ -681,7 +693,6 @@ export default function Attendance() {
             </Text>
           </TouchableOpacity>
 
-          {/* Students List */}
           <FlatList
             data={filteredStudents}
             keyExtractor={(item) => item.id.toString()}
@@ -713,16 +724,13 @@ export default function Attendance() {
             )}
           />
 
-          {/* Mark Attendance Button */}
           <TouchableOpacity
             style={[
               styles.markBtn,
               selectedStudents.length === 0 && styles.markBtnDisabled,
             ]}
             onPress={markAttendance}
-            disabled={
-              selectedStudents.length === 0 || sessionForDay.length === 0
-            }
+            disabled={selectedStudents.length === 0 || sessionForDay.length === 0}
           >
             <Text style={styles.markBtnText}>
               Mark Attendance ({selectedStudents.length})
@@ -786,57 +794,8 @@ export default function Attendance() {
 
                 <Text style={styles.historyTitle}>Attendance History</Text>
 
-                {/* Month Navigation with Summary */}
-                <View style={styles.historyNavigation}>
-                  <TouchableOpacity
-                    onPress={() => changeHistoryMonth(-1)}
-                    style={styles.historyNavButton}
-                  >
-                    <Ionicons name="chevron-back" size={24} color="#2563EB" />
-                  </TouchableOpacity>
-
-                  <View style={styles.historyMonthInfo}>
-                    <Text style={styles.historyMonthText}>
-                      {monthNames[historyMonth]} {historyYear}
-                    </Text>
-
-                    <View style={styles.historyMonthStats}>
-                      <View style={styles.historyStatItem}>
-                        <View
-                          style={[
-                            styles.historyStatDot,
-                            styles.historyStatPresent,
-                          ]}
-                        />
-                        <Text style={styles.historyStatText}>
-                          {monthStats.present} present
-                        </Text>
-                      </View>
-                      <View style={styles.historyStatItem}>
-                        <View
-                          style={[
-                            styles.historyStatDot,
-                            styles.historyStatAbsent,
-                          ]}
-                        />
-                        <Text style={styles.historyStatText}>
-                          {monthStats.absent} absent
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() => changeHistoryMonth(1)}
-                    style={styles.historyNavButton}
-                  >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={24}
-                      color="#2563EB"
-                    />
-                  </TouchableOpacity>
-                </View>
+                {/* Month Selector with Stats */}
+                {renderMonthSelector()}
 
                 {/* History Calendar */}
                 <View style={styles.historyCalendarContainer}>
@@ -898,7 +857,8 @@ export default function Attendance() {
                                 <Text
                                   style={[
                                     styles.historyDayText,
-                                    day === null && styles.calendarDayTextEmpty,
+                                    day === null &&
+                                      styles.calendarDayTextEmpty,
                                     status === "Present" &&
                                       styles.historyDayTextPresent,
                                     status === "Absent" &&
@@ -913,9 +873,6 @@ export default function Attendance() {
                                 >
                                   {day || ""}
                                 </Text>
-                                {hasSession && !status && (
-                                  <View style={styles.sessionIndicator} />
-                                )}
                               </View>
                             );
                           })}
@@ -926,21 +883,15 @@ export default function Attendance() {
 
                   <View style={styles.sessionLegendContainer}>
                     <View style={styles.legendItem}>
-                      <View
-                        style={[styles.legendDot, styles.legendDotPresent]}
-                      />
+                      <View style={[styles.legendDot, styles.legendDotPresent]} />
                       <Text style={styles.legendText}>Present</Text>
                     </View>
                     <View style={styles.legendItem}>
-                      <View
-                        style={[styles.legendDot, styles.legendDotAbsent]}
-                      />
+                      <View style={[styles.legendDot, styles.legendDotAbsent]} />
                       <Text style={styles.legendText}>Absent</Text>
                     </View>
                     <View style={styles.legendItem}>
-                      <View
-                        style={[styles.legendDot, styles.legendDotSession]}
-                      />
+                      <View style={[styles.legendDot, styles.legendDotSession]} />
                       <Text style={styles.legendText}>Session Day</Text>
                     </View>
                     <View style={styles.legendItem}>
