@@ -2,8 +2,6 @@ const db = require("../config/db");
 
 // Get all attendance
 exports.getAttendance = (req, res) => {
-  console.log("GET /api/attendance - Fetching all attendance");
-  
   const query = `
     SELECT 
       a.*,
@@ -26,7 +24,6 @@ exports.getAttendance = (req, res) => {
         details: err.message 
       });
     }
-    console.log(`Found ${results?.length || 0} attendance records`);
     res.json(results || []);
   });
 };
@@ -34,25 +31,21 @@ exports.getAttendance = (req, res) => {
 // Save attendance
 exports.saveAttendance = (req, res) => {
   const data = req.body;
-  console.log("POST /api/attendance - Received data:", JSON.stringify(data, null, 2));
 
   // Validate required fields
   if (!data.student_ids || !Array.isArray(data.student_ids) || data.student_ids.length === 0) {
-    console.error("Validation failed: No students selected");
     return res.status(400).json({ error: "No students selected" });
   }
 
   if (!data.session_id) {
-    console.error("Validation failed: Session ID is required");
     return res.status(400).json({ error: "Session ID is required" });
   }
 
   if (!data.date) {
-    console.error("Validation failed: Date is required");
     return res.status(400).json({ error: "Date is required" });
   }
 
-  // Normalize status to match enum values (Present/Absent)
+  // Normalize status
   let status = data.status || "Present";
   if (status.toLowerCase() === 'present') {
     status = 'Present';
@@ -60,17 +53,21 @@ exports.saveAttendance = (req, res) => {
     status = 'Absent';
   }
 
+  // Format date
+  let dateStr = data.date;
+  if (dateStr.includes('T')) {
+    dateStr = dateStr.split('T')[0];
+  }
+
   // Prepare values for bulk insert
   const values = data.student_ids.map((studentId) => [
     parseInt(studentId),
     parseInt(data.session_id),
     data.age_group_id ? parseInt(data.age_group_id) : null,
-    data.date,
+    dateStr,
     status,
     data.remarks || null
   ]);
-
-  console.log("Inserting values:", JSON.stringify(values, null, 2));
 
   const query = `
     INSERT INTO attendance 
@@ -87,7 +84,6 @@ exports.saveAttendance = (req, res) => {
       });
     }
 
-    console.log(`Successfully inserted ${result?.affectedRows || 0} attendance records`);
     res.json({
       success: true,
       message: "Attendance saved successfully",
@@ -99,68 +95,45 @@ exports.saveAttendance = (req, res) => {
 // Get student attendance history
 exports.getStudentAttendance = (req, res) => {
   const studentId = req.params.studentId;
-  console.log(`GET /api/attendance/student/${studentId} - Fetching student attendance`);
 
   if (!studentId || isNaN(parseInt(studentId))) {
-    console.error("Validation failed: Invalid student ID");
     return res.status(400).json({ error: "Invalid student ID" });
   }
 
-  // First check if student exists
-  const checkStudentQuery = "SELECT id FROM students WHERE id = ?";
-  db.query(checkStudentQuery, [parseInt(studentId)], (err, studentResult) => {
+  const query = `
+    SELECT 
+      a.id,
+      a.attendance_date,
+      a.status,
+      a.remarks,
+      a.created_at,
+      s.session_name,
+      s.day_of_week,
+      s.start_time,
+      s.end_time
+    FROM attendance a
+    JOIN sessions s ON a.session_id = s.id
+    WHERE a.student_id = ?
+    ORDER BY a.attendance_date DESC, a.created_at DESC
+  `;
+
+  db.query(query, [parseInt(studentId)], (err, results) => {
     if (err) {
-      console.error("Error checking student:", err);
+      console.error("Error in getStudentAttendance:", err);
       return res.status(500).json({ 
         error: "Database error", 
         details: err.message 
       });
     }
-
-    if (!studentResult || studentResult.length === 0) {
-      console.log(`Student ${studentId} not found`);
-      return res.status(404).json({ error: "Student not found" });
-    }
-
-    const query = `
-      SELECT 
-        a.id,
-        a.attendance_date,
-        a.status,
-        a.remarks,
-        a.created_at,
-        s.session_name,
-        s.day_of_week,
-        s.start_time,
-        s.end_time
-      FROM attendance a
-      JOIN sessions s ON a.session_id = s.id
-      WHERE a.student_id = ?
-      ORDER BY a.attendance_date DESC, a.created_at DESC
-    `;
-
-    db.query(query, [parseInt(studentId)], (err, results) => {
-      if (err) {
-        console.error("Error in getStudentAttendance query:", err);
-        console.error("SQL Error:", err.sqlMessage);
-        return res.status(500).json({ 
-          error: "Database error", 
-          details: err.message 
-        });
-      }
-      console.log(`Found ${results?.length || 0} attendance records for student ${studentId}`);
-      res.json(results || []);
-    });
+    res.json(results || []);
   });
 };
 
 // Delete attendance
 exports.deleteAttendance = (req, res) => {
   const id = req.params.id;
-  console.log(`DELETE /api/attendance/${id} - Deleting attendance record`);
 
   if (!id || isNaN(parseInt(id))) {
-    console.error("Validation failed: Invalid attendance ID");
     return res.status(400).json({ error: "Invalid attendance ID" });
   }
 
@@ -176,11 +149,10 @@ exports.deleteAttendance = (req, res) => {
     }
 
     if (result.affectedRows === 0) {
-      console.log(`Attendance record ${id} not found`);
       return res.status(404).json({ error: "Attendance record not found" });
     }
 
-    console.log(`Successfully deleted attendance record ${id}`);
+    console.log(` Attendance deleted: ID ${id}`);
     res.json({ 
       success: true, 
       message: "Attendance record deleted successfully" 
