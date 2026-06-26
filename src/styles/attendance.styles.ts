@@ -95,14 +95,15 @@ export default StyleSheet.create({
     padding: 8,
   },
   calendarMonthText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#0F172A",
   },
   weekDaysRow: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginBottom: 8,
+    paddingHorizontal: 4,
   },
   weekDayText: {
     fontSize: 12,
@@ -134,10 +135,10 @@ export default StyleSheet.create({
     backgroundColor: "#2563EB",
   },
   calendarDayPresent: {
-    backgroundColor: "#22C55E", // Green for present
+    backgroundColor: "#22C55E",
   },
   calendarDayAbsent: {
-    backgroundColor: "#EF4444", // Red for absent
+    backgroundColor: "#EF4444",
   },
   calendarDayToday: {
     borderWidth: 2,
@@ -307,12 +308,6 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-  studentItemAlreadyMarked: {
-    opacity: 0.7,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#22C55E",
-  },
   studentCheckbox: {
     width: 24,
     height: 24,
@@ -396,7 +391,7 @@ export default StyleSheet.create({
   },
   historyTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#0F172A",
     marginTop: 20,
     marginBottom: 12,
@@ -406,6 +401,9 @@ export default StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 16,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 12,
   },
   historyNavButton: {
     padding: 8,
@@ -416,7 +414,7 @@ export default StyleSheet.create({
   },
   historyMonthText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#0F172A",
   },
   historyMonthStats: {
@@ -451,38 +449,42 @@ export default StyleSheet.create({
     marginBottom: 16,
   },
   historyWeekDayText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#64748B",
-    width: 40,
+    width: 35,
     textAlign: "center",
   },
   historyDay: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
   },
   historyDayPresent: {
-    backgroundColor: "#22C55E", // Green for present
+    backgroundColor: "#22C55E",
+    borderRadius: 17.5,
   },
   historyDayAbsent: {
-    backgroundColor: "#EF4444", // Red for absent
+    backgroundColor: "#EF4444",
+    borderRadius: 17.5,
   },
   historyDayToday: {
     borderWidth: 2,
     borderColor: "#2563EB",
+    borderRadius: 17.5,
     backgroundColor: "transparent",
   },
   historyDaySession: {
     backgroundColor: "#F1F5F9",
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    borderRadius: 17.5,
   },
   historyDayText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#0F172A",
   },
   historyDayTextPresent: {
@@ -568,7 +570,7 @@ export default StyleSheet.create({
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#2563EB",
+    backgroundColor: "#22C55E",
     borderRadius: 4,
   },
 });

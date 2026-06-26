@@ -613,15 +613,8 @@ export default function Attendance() {
                   ))}
                 </View>
 
+                {/* Main Calendar Legend - Only Today and Selected */}
                 <View style={styles.legendContainer}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, styles.legendDotPresent]} />
-                    <Text style={styles.legendText}>Present</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, styles.legendDotAbsent]} />
-                    <Text style={styles.legendText}>Absent</Text>
-                  </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.legendDot, styles.legendDotToday]} />
                     <Text style={styles.legendText}>Today</Text>
@@ -881,6 +874,7 @@ export default function Attendance() {
                     )}
                   </View>
 
+                  {/* History Modal Legend - Full legend with Present and Absent */}
                   <View style={styles.sessionLegendContainer}>
                     <View style={styles.legendItem}>
                       <View style={[styles.legendDot, styles.legendDotPresent]} />
