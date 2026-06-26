@@ -14,8 +14,8 @@ import {
 } from "react-native";
 
 export default function Students() {
-  const API = "http://10.217.168.182:5000/api/students";
-  const AGE_API = "http://10.217.168.182:5000/api/agegroups";
+  const API = "http://192.168.8.102:5000/api/students";
+  const AGE_API = "http://192.168.8.102:5000/api/agegroups";
 
   const [students, setStudents] = useState<any[]>([]);
   const [ageGroups, setAgeGroups] = useState<any[]>([]);
