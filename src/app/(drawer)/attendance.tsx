@@ -27,10 +27,10 @@ function isErrorWithMessage(error: unknown): error is { message: string } {
 
 export default function Attendance() {
   // API URLs
-  const API = "http://192.168.8.102:5000/api/attendance";
-  const SESSIONS_API = "http://192.168.8.102:5000/api/sessions";
-  const AGE_GROUPS_API = "http://192.168.8.102:5000/api/agegroups";
-  const STUDENTS_API = "http://192.168.8.102:5000/api/students";
+  const API = "http://10.217.168.182:5000/api/attendance";
+  const SESSIONS_API = "http://10.217.168.182:5000/api/sessions";
+  const AGE_GROUPS_API = "http://10.217.168.182:5000/api/agegroups";
+  const STUDENTS_API = "http://10.217.168.182:5000/api/students";
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [ageGroups, setAgeGroups] = useState<any[]>([]);

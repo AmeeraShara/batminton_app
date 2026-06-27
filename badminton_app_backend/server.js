@@ -33,3 +33,7 @@ app.use("/api/sessions", sessionRoutes);
 //Attendance
 const attendanceRoutes = require("./routes/attendanceRoutes");
 app.use("/api/attendance", attendanceRoutes);
+
+//Payment
+const paymentRoutes = require("./routes/paymentRoutes");
+app.use("/api/payments", paymentRoutes);

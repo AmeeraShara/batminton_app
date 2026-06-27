@@ -14,6 +14,7 @@ import {
 export default function AppHeader() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   useEffect(() => {
     loadUser();
@@ -28,6 +29,14 @@ export default function AppHeader() {
       }
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const toggleMenu = (menuTitle: string) => {
+    if (expandedMenu === menuTitle) {
+      setExpandedMenu(null);
+    } else {
+      setExpandedMenu(menuTitle);
     }
   };
 
@@ -61,43 +70,119 @@ export default function AppHeader() {
       icon: "grid-outline",
       title: "Dashboard",
       route: "/dashboard",
+      isParent: false,
     },
     {
       icon: "people-outline",
       title: "Students",
       route: "/students",
+      isParent: false,
     },
     {
       icon: "checkbox-outline",
       title: "Attendance",
       route: "/attendance",
+      isParent: false,
     },
     {
       icon: "card-outline",
       title: "Payments",
-      route: "/payments",
+      route: null,
+      isParent: true,
+      children: [
+        {
+          icon: "trending-up-outline",
+          title: "Payment Tracker",
+          route: "/payment-tracker",
+        },
+        {
+          icon: "receipt-outline",
+          title: "Payment Records",
+          route: "/payment-records",
+        },
+      ],
     },
     {
       icon: "radio-button-on-outline",
       title: "Age Groups",
       route: "/agegroups",
+      isParent: false,
     },
     {
       icon: "calendar-outline",
       title: "Sessions",
       route: "/sessions",
+      isParent: false,
     },
     {
       icon: "stats-chart-outline",
       title: "Reports",
       route: "/reports",
+      isParent: false,
     },
     {
       icon: "settings-outline",
       title: "Settings",
       route: "/settings",
+      isParent: false,
     },
   ];
+
+  const renderDrawerItem = (item: any, index: number) => {
+    if (item.isParent) {
+      const isExpanded = expandedMenu === item.title;
+      return (
+        <View key={index}>
+          <TouchableOpacity
+            style={styles.drawerItem}
+            onPress={() => toggleMenu(item.title)}
+          >
+            <View style={styles.drawerItemLeft}>
+              <Ionicons name={item.icon as any} size={24} color="#64748B" />
+              <Text style={styles.drawerText}>{item.title}</Text>
+            </View>
+            <Ionicons
+              name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"}
+              size={20}
+              color="#64748B"
+            />
+          </TouchableOpacity>
+          {isExpanded && (
+            <View style={styles.subMenuContainer}>
+              {item.children.map((child: any, childIndex: number) => (
+                <TouchableOpacity
+                  key={childIndex}
+                  style={styles.subMenuItem}
+                  onPress={() => {
+                    setDrawerVisible(false);
+                    router.push(child.route as any);
+                  }}
+                >
+                  <View style={styles.subMenuItemLeft}>
+                    <Ionicons name={child.icon as any} size={20} color="#64748B" />
+                    <Text style={styles.subMenuText}>{child.title}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    } else {
+      return (
+        <TouchableOpacity
+          key={index}
+          style={styles.drawerItem}
+          onPress={() => navigateTo(item.route)}
+        >
+          <View style={styles.drawerItemLeft}>
+            <Ionicons name={item.icon as any} size={24} color="#64748B" />
+            <Text style={styles.drawerText}>{item.title}</Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+  };
 
   return (
     <>
@@ -138,17 +223,7 @@ export default function AppHeader() {
 
             <View style={styles.line} />
 
-            {menuItems.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.drawerItem}
-                onPress={() => navigateTo(item.route)}
-              >
-                <Ionicons name={item.icon as any} size={24} color="#64748B" />
-
-                <Text style={styles.drawerText}>{item.title}</Text>
-              </TouchableOpacity>
-            ))}
+            {menuItems.map((item, index) => renderDrawerItem(item, index))}
 
             <View style={styles.line} />
 
@@ -219,14 +294,45 @@ const styles = StyleSheet.create({
 
   drawerItem: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 15,
+  },
+
+  drawerItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   drawerText: {
     marginLeft: 18,
     fontSize: 18,
     color: "#111827",
+  },
+
+  subMenuContainer: {
+    marginLeft: 20,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+
+  subMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+
+  subMenuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  subMenuText: {
+    marginLeft: 18,
+    fontSize: 16,
+    color: "#475569",
   },
 
   logoutBtn: {
