@@ -7,8 +7,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
-  Modal,
   SafeAreaView,
   ScrollView,
   Text,
@@ -26,8 +24,6 @@ export default function PaymentTracker() {
   const [payments, setPayments] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [search, setSearch] = useState("");
-  const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -109,7 +105,16 @@ export default function PaymentTracker() {
 
       const data = await response.json();
       console.log("Payments loaded:", data.length);
+      console.log("Sample payment data:", JSON.stringify(data[0], null, 2));
       setPayments(data);
+      
+      // If a student is selected, refresh their data
+      if (studentId) {
+        const student = students.find((s) => String(s.id) === String(studentId));
+        if (student) {
+          setSelectedStudent(student);
+        }
+      }
     } catch (error) {
       console.log("Error loading payments:", error);
       setError("Failed to load payments. Please check your connection.");
@@ -131,6 +136,8 @@ export default function PaymentTracker() {
 
       const data = await response.json();
       console.log("Students loaded:", data.length);
+      console.log("Sample student data:", JSON.stringify(data[0], null, 2));
+      console.log("All students:", JSON.stringify(data, null, 2));
       setStudents(data);
     } catch (error) {
       console.log("Error loading students:", error);
@@ -173,6 +180,8 @@ export default function PaymentTracker() {
       const url = editId ? `${API}/${editId}` : API;
       const method = editId ? "PUT" : "POST";
 
+      console.log("Saving payment:", { url, method, body });
+
       const response = await fetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
@@ -183,9 +192,25 @@ export default function PaymentTracker() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      const result = await response.json();
+      console.log("Payment saved:", result);
+
       await loadPayments();
-      resetForm();
-      setModal(false);
+      
+      // Keep the student selected after payment
+      if (studentId) {
+        const student = students.find((s) => String(s.id) === String(studentId));
+        if (student) {
+          setSelectedStudent(student);
+        }
+      }
+      
+      // Reset only the form fields, keep student selected
+      setAmount("");
+      setPaymentMonth(getCurrentMonth());
+      setPaymentMethod("Cash");
+      setEditId(null);
+      
       Alert.alert("Success", "Payment saved successfully");
     } catch (error) {
       console.log("Error saving payment:", error);
@@ -216,6 +241,15 @@ export default function PaymentTracker() {
               }
 
               await loadPayments();
+              
+              // Keep the student selected after deletion
+              if (studentId) {
+                const student = students.find((s) => String(s.id) === String(studentId));
+                if (student) {
+                  setSelectedStudent(student);
+                }
+              }
+              
               Alert.alert("Success", "Payment deleted successfully");
             } catch (error) {
               console.log("Error deleting payment:", error);
@@ -229,17 +263,32 @@ export default function PaymentTracker() {
 
   // Get student payment history
   const getStudentPaymentHistory = (studentId: string) => {
-    return payments
-      .filter((payment) => payment.student_id === studentId)
-      .sort(
-        (a, b) =>
-          new Date(b.created_at || b.payment_month).getTime() -
-          new Date(a.created_at || a.payment_month).getTime(),
-      );
+    if (!studentId) return [];
+    
+    console.log("Getting history for student ID:", studentId);
+    console.log("All payments:", payments.length);
+    console.log("Payments data:", JSON.stringify(payments, null, 2));
+    
+    const filtered = payments.filter((payment) => {
+      console.log(`Comparing payment student_id: ${payment.student_id} with selected: ${studentId}`);
+      return String(payment.student_id) === String(studentId);
+    });
+    
+    console.log("Filtered payments count:", filtered.length);
+    
+    const sorted = filtered.sort(
+      (a, b) =>
+        new Date(b.created_at || b.payment_month).getTime() -
+        new Date(a.created_at || a.payment_month).getTime(),
+    );
+    
+    return sorted;
   };
 
   // Get payment status for a specific month
   const getPaymentStatus = (studentId: string, monthIndex: number) => {
+    if (!studentId) return "pending";
+    
     const currentYear = new Date().getFullYear();
     const monthDate = new Date(currentYear, monthIndex, 1);
     const monthString = monthDate.toLocaleString("default", {
@@ -248,7 +297,7 @@ export default function PaymentTracker() {
     });
 
     const payment = payments.find(
-      (p) => p.student_id === studentId && p.payment_month === monthString,
+      (p) => String(p.student_id) === String(studentId) && p.payment_month === monthString,
     );
 
     if (payment) {
@@ -264,11 +313,46 @@ export default function PaymentTracker() {
     return "overdue";
   };
 
-  // Handle student selection
-  const handleStudentSelect = (student: any) => {
-    setSelectedStudent(student);
-    setStudentId(student.id);
-    setStudentName(student.student_name);
+  // Handle student selection from dropdown
+  const handleStudentSelect = (value: string) => {
+    console.log("Student selected with ID:", value);
+    console.log("Type of ID:", typeof value);
+    console.log("All students:", students);
+    
+    setStudentId(value);
+    
+    if (value) {
+      // Try to find student by comparing string values
+      const student = students.find((s) => {
+        console.log(`Comparing: s.id=${s.id} (${typeof s.id}) with value=${value} (${typeof value})`);
+        return String(s.id) === String(value);
+      });
+      
+      console.log("Found student:", student);
+      
+      if (student) {
+        setStudentName(student.student_name || "");
+        setSelectedStudent(student);
+        console.log("✅ Student selected successfully:", student.student_name);
+        console.log("Student ID for payments:", student.id);
+        
+        // Check if this student has payments
+        const studentPayments = payments.filter(p => String(p.student_id) === String(student.id));
+        console.log("This student has", studentPayments.length, "payments");
+        if (studentPayments.length > 0) {
+          console.log("First payment:", studentPayments[0]);
+        }
+      } else {
+        console.log("❌ No student found with ID:", value);
+        console.log("Available student IDs:", students.map(s => `${s.id} (${typeof s.id})`));
+        setStudentName("");
+        setSelectedStudent(null);
+      }
+    } else {
+      console.log("No student selected");
+      setStudentName("");
+      setSelectedStudent(null);
+    }
   };
 
   // Show loading state
@@ -312,38 +396,41 @@ export default function PaymentTracker() {
           </View>
         ) : null}
 
+        {/* <View style={[styles.card, { backgroundColor: '#F0F9FF' }]}>
+          <Text style={{ fontSize: 13, color: '#0369A1' }}>
+            📊 Students: {students.length} | Payments: {payments.length}
+          </Text>
+          {selectedStudent && (
+            <Text style={{ fontSize: 13, color: '#0369A1', marginTop: 4 }}>
+              ✅ Selected: {selectedStudent.student_name} (ID: {selectedStudent.id})
+            </Text>
+          )}
+          {students.length > 0 && (
+            <Text style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+              Student IDs: {students.map(s => `${s.id} (${typeof s.id})`).join(', ')}
+            </Text>
+          )}
+        </View> */}
+
         {/* Payment Form Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Record Payment</Text>
 
           {/* Student Picker */}
           <View style={styles.formGroup}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.label}>STUDENT</Text>
-              <TouchableOpacity 
-                style={styles.selectStudentBtn}
-                onPress={() => setModal(true)}
-              >
-                <Text style={styles.selectStudentText}>Browse</Text>
-                <Ionicons name="search-outline" size={16} color="#2563EB" />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.label}>SELECT STUDENT</Text>
             <View style={styles.pickerWrap}>
               <Picker
                 selectedValue={studentId}
-                onValueChange={(value) => {
-                  const student = students.find((s) => s.id === value);
-                  setStudentId(value);
-                  setStudentName(student?.student_name || "");
-                  setSelectedStudent(student || null);
-                }}
+                onValueChange={handleStudentSelect}
+                style={{ height: 50 }}
               >
-                <Picker.Item label="Select student..." value="" />
+                <Picker.Item label="-- Select a student --" value="" />
                 {students.map((student: any) => (
                   <Picker.Item
                     key={student.id}
-                    label={student.student_name}
-                    value={student.id}
+                    label={`${student.student_name} (${student.age_group_name || 'U-9'})`}
+                    value={String(student.id)}
                   />
                 ))}
               </Picker>
@@ -357,6 +444,7 @@ export default function PaymentTracker() {
               <Picker
                 selectedValue={paymentMonth}
                 onValueChange={(value) => setPaymentMonth(value)}
+                style={{ height: 50 }}
               >
                 <Picker.Item
                   label={`${getCurrentMonth()} (Current)`}
@@ -385,6 +473,7 @@ export default function PaymentTracker() {
               <Picker
                 selectedValue={paymentMethod}
                 onValueChange={(value) => setPaymentMethod(value)}
+                style={{ height: 50 }}
               >
                 {paymentMethods.map((method) => (
                   <Picker.Item key={method} label={method} value={method} />
@@ -398,28 +487,30 @@ export default function PaymentTracker() {
             <Text style={styles.label}>AMOUNT (Rs)</Text>
             <TextInput
               style={styles.amountInput}
-              placeholder="Rs 0.00"
+              placeholder="Enter amount"
               keyboardType="numeric"
               value={amount}
               onChangeText={setAmount}
+              placeholderTextColor="#94A3B8"
             />
           </View>
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={styles.submitBtn}
+            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
             onPress={savePayment}
             disabled={loading}
           >
             <Text style={styles.submitBtnText}>
-              {loading ? "Saving..." : "Submit Payment"}
+              {loading ? "Processing..." : "Submit Payment"}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Student Details Card - Only shown when a student is selected */}
-        {selectedStudent && (
+        {/* STUDENT DETAILS - SHOWS IMMEDIATELY AFTER SELECTION */}
+        {selectedStudent ? (
           <>
+            {/* Student Info Card */}
             <View style={styles.studentCard}>
               <View style={styles.studentHeader}>
                 <View style={styles.studentAvatar}>
@@ -432,12 +523,9 @@ export default function PaymentTracker() {
                     {selectedStudent.student_name}
                   </Text>
                   <Text style={styles.studentGroup}>
-                    {selectedStudent.age_group_name || "U-9"}
+                    {selectedStudent.age_group_name || "U-9"} • Reg: {selectedStudent.registration_number || "N/A"}
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.studentAction}>
-                  <Ionicons name="chevron-forward" size={24} color="#64748B" />
-                </TouchableOpacity>
               </View>
 
               <View style={styles.studentContact}>
@@ -505,124 +593,67 @@ export default function PaymentTracker() {
               </View>
             </View>
 
-            {/* Recent Transactions - Table View */}
+            {/* Recent Transactions */}
             <View style={styles.transactionCard}>
               <Text style={styles.transactionTitle}>Recent Transactions</Text>
 
-              {getStudentPaymentHistory(selectedStudent.id).length > 0 ? (
-                <>
-                  {/* Table Header */}
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Date</Text>
-                    <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Billed Month</Text>
-                    <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Method</Text>
-                    <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Amount</Text>
-                    <Text style={[styles.tableHeaderText, { flex: 1 }]}>Status</Text>
-                  </View>
-
-                  {/* Table Rows */}
-                  {getStudentPaymentHistory(selectedStudent.id).map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
-                      <Text style={[styles.tableCell, { flex: 1.5 }]}>
-                        {formatDate(item.created_at || item.payment_month)}
-                      </Text>
-                      <Text style={[styles.tableCell, { flex: 1.5 }]}>
-                        {item.payment_month}
-                      </Text>
-                      <Text style={[styles.tableCell, { flex: 1.2 }]}>
-                        {item.payment_method}
-                      </Text>
-                      <Text style={[styles.tableCell, { flex: 1.2, fontWeight: "600", color: "#055807" }]}>
-                        Rs. {item.amount}
-                      </Text>
-                      <View style={[styles.statusBadge, { flex: 1 }]}>
-                        <Text style={styles.statusBadgeText}>PAID</Text>
+              {(() => {
+                const history = getStudentPaymentHistory(selectedStudent.id);
+                if (history.length > 0) {
+                  return (
+                    <>
+                      <View style={styles.tableHeader}>
+                        <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Date</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Billed Month</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Method</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Amount</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1 }]}>Status</Text>
                       </View>
-                      {/* $<TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => deletePayment(item.id)}
-                      >
-                        <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                      </TouchableOpacity> */}
+
+                      {history.map((item, index) => (
+                        <View key={index} style={styles.tableRow}>
+                          <Text style={[styles.tableCell, { flex: 1.5 }]}>
+                            {formatDate(item.created_at || item.payment_month)}
+                          </Text>
+                          <Text style={[styles.tableCell, { flex: 1.5 }]}>
+                            {item.payment_month}
+                          </Text>
+                          <Text style={[styles.tableCell, { flex: 1.2 }]}>
+                            {item.payment_method}
+                          </Text>
+                          <Text style={[styles.tableCell, { flex: 1.2, fontWeight: "600", color: "#055807" }]}>
+                            Rs. {item.amount}
+                          </Text>
+                          <View style={[styles.statusBadge, { flex: 1 }]}>
+                            <Text style={styles.statusBadgeText}>PAID</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </>
+                  );
+                } else {
+                  return (
+                    <View style={styles.emptyTransaction}>
+                      <Ionicons name="receipt-outline" size={40} color="#CBD5E1" />
+                      <Text style={styles.emptyTransactionText}>
+                        No transactions yet for this student.
+                      </Text>
                     </View>
-                  ))}
-                </>
-              ) : (
-                <View style={styles.emptyTransaction}>
-                  <Ionicons name="receipt-outline" size={40} color="#CBD5E1" />
-                  <Text style={styles.emptyTransactionText}>
-                    No transactions yet for this student.
-                  </Text>
-                </View>
-              )}
+                  );
+                }
+              })()}
             </View>
           </>
+        ) : (
+          // Show message when no student is selected
+          <View style={styles.noStudentSelected}>
+            <Ionicons name="person-outline" size={60} color="#CBD5E1" />
+            <Text style={styles.noStudentText}>
+              Select a student from the dropdown above to view their payment history
+            </Text>
+          </View>
         )}
       </ScrollView>
-
-      {/* Student Selection Modal */}
-      <Modal visible={modal} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select a Student</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setModal(false);
-                  resetForm();
-                }}
-              >
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <TextInput
-              placeholder="Search students..."
-              value={search}
-              onChangeText={setSearch}
-              style={styles.modalSearch}
-            />
-
-            <FlatList
-              data={students.filter(
-                (item) =>
-                  item.student_name
-                    ?.toLowerCase()
-                    .includes(search.toLowerCase()) ||
-                  item.registration_number
-                    ?.toLowerCase()
-                    .includes(search.toLowerCase()),
-              )}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalStudentItem}
-                  onPress={() => {
-                    handleStudentSelect(item);
-                    setModal(false);
-                    setSearch("");
-                  }}
-                >
-                  <View style={styles.modalStudentAvatar}>
-                    <Text style={styles.modalAvatarText}>
-                      {item.student_name?.charAt(0) || "S"}
-                    </Text>
-                  </View>
-                  <View style={styles.modalStudentInfo}>
-                    <Text style={styles.modalStudentName}>
-                      {item.student_name}
-                    </Text>
-                    <Text style={styles.modalStudentReg}>
-                      {item.registration_number}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

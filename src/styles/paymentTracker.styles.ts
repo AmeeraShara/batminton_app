@@ -423,4 +423,29 @@ export default StyleSheet.create({
     fontSize: 13,
     color: "#64748B",
   },
+  submitBtnDisabled: {
+    opacity: 0.7,
+    backgroundColor: '#94A3B8',
+  },
+
+  noStudentSelected: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+  },
+
+  noStudentText: {
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '500',
+  },
 });
