@@ -1,7 +1,7 @@
 import AppHeader from "@/components/AppHeader";
-import { Ionicons } from "@expo/vector-icons";
 import styles from "@/styles/paymentTracker.styles";
 
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
 import {
@@ -42,6 +42,22 @@ export default function PaymentTracker() {
   // Payment Methods
   const paymentMethods = ["Cash", "Bank Transfer", "Credit Card", "Cheque"];
 
+  // Months for payment status
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+
   // Get current date
   const getCurrentDate = () => {
     const date = new Date();
@@ -60,6 +76,16 @@ export default function PaymentTracker() {
     return `${month} ${year}`;
   };
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   // Load data on mount
   useEffect(() => {
     loadPayments();
@@ -73,14 +99,14 @@ export default function PaymentTracker() {
       setLoading(true);
       setError("");
       console.log("Fetching payments from:", API);
-      
+
       const response = await fetch(API);
       console.log("Response status:", response.status);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log("Payments loaded:", data.length);
       setPayments(data);
@@ -98,11 +124,11 @@ export default function PaymentTracker() {
     try {
       console.log("Fetching students from:", STUDENTS_API);
       const response = await fetch(STUDENTS_API);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log("Students loaded:", data.length);
       setStudents(data);
@@ -146,7 +172,7 @@ export default function PaymentTracker() {
       setLoading(true);
       const url = editId ? `${API}/${editId}` : API;
       const method = editId ? "PUT" : "POST";
-      
+
       const response = await fetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
@@ -181,14 +207,14 @@ export default function PaymentTracker() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`${API}/${id}`, { 
-                method: "DELETE" 
+              const response = await fetch(`${API}/${id}`, {
+                method: "DELETE",
               });
-              
+
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
               }
-              
+
               await loadPayments();
               Alert.alert("Success", "Payment deleted successfully");
             } catch (error) {
@@ -197,7 +223,7 @@ export default function PaymentTracker() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -205,7 +231,37 @@ export default function PaymentTracker() {
   const getStudentPaymentHistory = (studentId: string) => {
     return payments
       .filter((payment) => payment.student_id === studentId)
-      .sort((a, b) => new Date(b.payment_month).getTime() - new Date(a.payment_month).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.created_at || b.payment_month).getTime() -
+          new Date(a.created_at || a.payment_month).getTime(),
+      );
+  };
+
+  // Get payment status for a specific month
+  const getPaymentStatus = (studentId: string, monthIndex: number) => {
+    const currentYear = new Date().getFullYear();
+    const monthDate = new Date(currentYear, monthIndex, 1);
+    const monthString = monthDate.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+
+    const payment = payments.find(
+      (p) => p.student_id === studentId && p.payment_month === monthString,
+    );
+
+    if (payment) {
+      return "paid";
+    }
+
+    // Check if month is in the future
+    const currentMonthIndex = new Date().getMonth();
+    if (monthIndex > currentMonthIndex) {
+      return "pending";
+    }
+
+    return "overdue";
   };
 
   // Handle student selection
@@ -231,7 +287,7 @@ export default function PaymentTracker() {
     <SafeAreaView style={styles.container}>
       <AppHeader />
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -262,7 +318,16 @@ export default function PaymentTracker() {
 
           {/* Student Picker */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>STUDENT</Text>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.label}>STUDENT</Text>
+              <TouchableOpacity 
+                style={styles.selectStudentBtn}
+                onPress={() => setModal(true)}
+              >
+                <Text style={styles.selectStudentText}>Browse</Text>
+                <Ionicons name="search-outline" size={16} color="#2563EB" />
+              </TouchableOpacity>
+            </View>
             <View style={styles.pickerWrap}>
               <Picker
                 selectedValue={studentId}
@@ -300,10 +365,14 @@ export default function PaymentTracker() {
                 {Array.from({ length: 6 }, (_, i) => {
                   const date = new Date();
                   date.setMonth(date.getMonth() - (i + 1));
-                  const month = date.toLocaleString("default", { month: "long" });
+                  const month = date.toLocaleString("default", {
+                    month: "long",
+                  });
                   const year = date.getFullYear();
                   const label = `${month} ${year}`;
-                  return <Picker.Item key={label} label={label} value={label} />;
+                  return (
+                    <Picker.Item key={label} label={label} value={label} />
+                  );
                 })}
               </Picker>
             </View>
@@ -326,10 +395,10 @@ export default function PaymentTracker() {
 
           {/* Amount Input */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>AMOUNT ($)</Text>
+            <Text style={styles.label}>AMOUNT (Rs)</Text>
             <TextInput
               style={styles.amountInput}
-              placeholder="$ 0.00"
+              placeholder="Rs 0.00"
               keyboardType="numeric"
               value={amount}
               onChangeText={setAmount}
@@ -348,59 +417,146 @@ export default function PaymentTracker() {
           </TouchableOpacity>
         </View>
 
-        {/* Student Payment History */}
+        {/* Student Details Card - Only shown when a student is selected */}
         {selectedStudent && (
-          <View style={styles.historyCard}>
-            <View style={styles.historyHeader}>
-              <View>
-                <Text style={styles.historyTitle}>
-                  {selectedStudent.student_name}
-                </Text>
-                <Text style={styles.historySub}>
-                  Payment History ({getStudentPaymentHistory(selectedStudent.id).length}{" "}
-                  records)
-                </Text>
+          <>
+            <View style={styles.studentCard}>
+              <View style={styles.studentHeader}>
+                <View style={styles.studentAvatar}>
+                  <Text style={styles.studentAvatarText}>
+                    {selectedStudent.student_name?.charAt(0) || "S"}
+                  </Text>
+                </View>
+                <View style={styles.studentInfo}>
+                  <Text style={styles.studentName}>
+                    {selectedStudent.student_name}
+                  </Text>
+                  <Text style={styles.studentGroup}>
+                    {selectedStudent.age_group_name || "U-9"}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.studentAction}>
+                  <Ionicons name="chevron-forward" size={24} color="#64748B" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.viewAllBtn}
-                onPress={() => {
-                  setStudentId(selectedStudent.id);
-                  setStudentName(selectedStudent.student_name);
-                  setModal(true);
-                }}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-                <Ionicons name="arrow-forward" size={16} color="#2563EB" />
-              </TouchableOpacity>
+
+              <View style={styles.studentContact}>
+                <View style={styles.contactItem}>
+                  <Ionicons name="call-outline" size={16} color="#64748B" />
+                  <Text style={styles.contactText}>
+                    {selectedStudent.contact_number || "N/A"}
+                  </Text>
+                </View>
+                <View style={styles.contactItem}>
+                  <Ionicons name="mail-outline" size={16} color="#64748B" />
+                  <Text style={styles.contactText}>
+                    {selectedStudent.email || "N/A"}
+                  </Text>
+                </View>
+              </View>
             </View>
 
-            {getStudentPaymentHistory(selectedStudent.id).length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {getStudentPaymentHistory(selectedStudent.id).map((item, index) => (
-                  <View key={index} style={styles.historyItem}>
-                    <Text style={styles.historyMonth}>
-                      {new Date(item.payment_month).toLocaleString("default", {
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </Text>
-                    <Text style={styles.historyAmount}>${item.amount}</Text>
-                    <Text style={styles.historyMethod}>{item.payment_method}</Text>
-                    <TouchableOpacity
-                      style={styles.deleteHistoryBtn}
-                      onPress={() => deletePayment(item.id)}
-                    >
-                      <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyHistory}>
-                <Text style={styles.emptyText}>No payment records</Text>
+            {/* 12-Month Payment Status */}
+            <View style={styles.statusCard}>
+              <Text style={styles.statusTitle}>12-Month Payment Status</Text>
+              <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#10B981" }]}
+                  />
+                  <Text style={styles.legendText}>Paid</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#EF4444" }]}
+                  />
+                  <Text style={styles.legendText}>Overdue</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#F59E0B" }]}
+                  />
+                  <Text style={styles.legendText}>Pending</Text>
+                </View>
               </View>
-            )}
-          </View>
+
+              <View style={styles.monthsGrid}>
+                {months.map((month, index) => {
+                  const status = getPaymentStatus(selectedStudent.id, index);
+                  const statusColor =
+                    status === "paid"
+                      ? "#10B981"
+                      : status === "overdue"
+                        ? "#EF4444"
+                        : "#F59E0B";
+
+                  return (
+                    <View key={index} style={styles.monthItem}>
+                      <View
+                        style={[
+                          styles.monthDot,
+                          { backgroundColor: statusColor },
+                        ]}
+                      />
+                      <Text style={styles.monthLabel}>{month}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Recent Transactions - Table View */}
+            <View style={styles.transactionCard}>
+              <Text style={styles.transactionTitle}>Recent Transactions</Text>
+
+              {getStudentPaymentHistory(selectedStudent.id).length > 0 ? (
+                <>
+                  {/* Table Header */}
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Date</Text>
+                    <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Billed Month</Text>
+                    <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Method</Text>
+                    <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Amount</Text>
+                    <Text style={[styles.tableHeaderText, { flex: 1 }]}>Status</Text>
+                  </View>
+
+                  {/* Table Rows */}
+                  {getStudentPaymentHistory(selectedStudent.id).map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1.5 }]}>
+                        {formatDate(item.created_at || item.payment_month)}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 1.5 }]}>
+                        {item.payment_month}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 1.2 }]}>
+                        {item.payment_method}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 1.2, fontWeight: "600", color: "#055807" }]}>
+                        Rs. {item.amount}
+                      </Text>
+                      <View style={[styles.statusBadge, { flex: 1 }]}>
+                        <Text style={styles.statusBadgeText}>PAID</Text>
+                      </View>
+                      {/* $<TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => deletePayment(item.id)}
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                      </TouchableOpacity> */}
+                    </View>
+                  ))}
+                </>
+              ) : (
+                <View style={styles.emptyTransaction}>
+                  <Ionicons name="receipt-outline" size={40} color="#CBD5E1" />
+                  <Text style={styles.emptyTransactionText}>
+                    No transactions yet for this student.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </>
         )}
       </ScrollView>
 
@@ -430,8 +586,12 @@ export default function PaymentTracker() {
             <FlatList
               data={students.filter(
                 (item) =>
-                  item.student_name?.toLowerCase().includes(search.toLowerCase()) ||
-                  item.registration_number?.toLowerCase().includes(search.toLowerCase())
+                  item.student_name
+                    ?.toLowerCase()
+                    .includes(search.toLowerCase()) ||
+                  item.registration_number
+                    ?.toLowerCase()
+                    .includes(search.toLowerCase()),
               )}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
@@ -440,6 +600,7 @@ export default function PaymentTracker() {
                   onPress={() => {
                     handleStudentSelect(item);
                     setModal(false);
+                    setSearch("");
                   }}
                 >
                   <View style={styles.modalStudentAvatar}>
