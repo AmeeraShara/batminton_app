@@ -33,8 +33,8 @@ interface Session {
 }
 
 export default function Sessions() {
-  const API = "http://10.217.168.182:5000/api/sessions";
-  const ageGroupsAPI = "http://10.217.168.182:5000/api/agegroups";
+  const API = "http://192.168.8.102:5000/api/sessions";
+  const ageGroupsAPI = "http://192.168.8.102:5000/api/agegroups";
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
