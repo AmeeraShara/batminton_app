@@ -252,7 +252,6 @@ export default function PaymentTracker() {
               
               Alert.alert("Success", "Payment deleted successfully");
             } catch (error) {
-              console.log("Error deleting payment:", error);
               Alert.alert("Error", "Failed to delete payment");
             }
           },
@@ -265,16 +264,12 @@ export default function PaymentTracker() {
   const getStudentPaymentHistory = (studentId: string) => {
     if (!studentId) return [];
     
-    console.log("Getting history for student ID:", studentId);
-    console.log("All payments:", payments.length);
-    console.log("Payments data:", JSON.stringify(payments, null, 2));
+
     
     const filtered = payments.filter((payment) => {
-      console.log(`Comparing payment student_id: ${payment.student_id} with selected: ${studentId}`);
       return String(payment.student_id) === String(studentId);
     });
     
-    console.log("Filtered payments count:", filtered.length);
     
     const sorted = filtered.sort(
       (a, b) =>
@@ -315,16 +310,13 @@ export default function PaymentTracker() {
 
   // Handle student selection from dropdown
   const handleStudentSelect = (value: string) => {
-    console.log("Student selected with ID:", value);
-    console.log("Type of ID:", typeof value);
-    console.log("All students:", students);
+
     
     setStudentId(value);
     
     if (value) {
       // Try to find student by comparing string values
       const student = students.find((s) => {
-        console.log(`Comparing: s.id=${s.id} (${typeof s.id}) with value=${value} (${typeof value})`);
         return String(s.id) === String(value);
       });
       
@@ -396,21 +388,7 @@ export default function PaymentTracker() {
           </View>
         ) : null}
 
-        {/* <View style={[styles.card, { backgroundColor: '#F0F9FF' }]}>
-          <Text style={{ fontSize: 13, color: '#0369A1' }}>
-            📊 Students: {students.length} | Payments: {payments.length}
-          </Text>
-          {selectedStudent && (
-            <Text style={{ fontSize: 13, color: '#0369A1', marginTop: 4 }}>
-              ✅ Selected: {selectedStudent.student_name} (ID: {selectedStudent.id})
-            </Text>
-          )}
-          {students.length > 0 && (
-            <Text style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-              Student IDs: {students.map(s => `${s.id} (${typeof s.id})`).join(', ')}
-            </Text>
-          )}
-        </View> */}
+
 
         {/* Payment Form Card */}
         <View style={styles.card}>
