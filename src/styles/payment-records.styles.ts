@@ -115,20 +115,8 @@ export default StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
   },
-  exportBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 10,
-    gap: 6,
-  },
-  exportText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    fontSize: 13,
-  },
+
+
   transactionSection: {
     flex: 1,
   },
@@ -235,5 +223,39 @@ export default StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
     paddingHorizontal: 20,
+  },
+  exportButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+
+  exportBtnPDF: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+  },
+
+  exportBtnExcel: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#16A34A',
+  },
+
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+    gap: 6,
+    minWidth: 60,
+    justifyContent: 'center',
+  },
+
+  exportText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2563EB',
   },
 });
