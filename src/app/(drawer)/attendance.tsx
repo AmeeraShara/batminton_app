@@ -46,10 +46,11 @@ export default function Attendance() {
   const [markingDate, setMarkingDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Modal states for student details
-  const [detailModal, setDetailModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  // States for selected student and history
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [selectedStudentDetails, setSelectedStudentDetails] = useState<any>(null);
   const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   // History month/year state
   const [historyMonth, setHistoryMonth] = useState(new Date().getMonth());
@@ -75,6 +76,19 @@ export default function Attendance() {
   useEffect(() => {
     filterStudents();
   }, [selectedSession, selectedAgeGroup, searchQuery, students]);
+
+  useEffect(() => {
+    if (selectedStudentId) {
+      const student = students.find(s => s.id === selectedStudentId);
+      setSelectedStudentDetails(student || null);
+      loadAttendanceHistory(selectedStudentId);
+      setShowHistory(true);
+    } else {
+      setSelectedStudentDetails(null);
+      setAttendanceHistory([]);
+      setShowHistory(false);
+    }
+  }, [selectedStudentId, students]);
 
   const loadData = async () => {
     setLoading(true);
@@ -221,8 +235,9 @@ export default function Attendance() {
         Alert.alert("Success", message);
         setSelectedStudents([]);
         await loadStudents();
-        if (selectedStudent) {
-          await loadAttendanceHistory(selectedStudent.id);
+        // Reload history if a student is selected
+        if (selectedStudentId) {
+          await loadAttendanceHistory(selectedStudentId);
         }
       } else {
         Alert.alert(
@@ -236,13 +251,6 @@ export default function Attendance() {
         "Server error while marking attendance. Please try again.",
       );
     }
-  };
-
-  const viewStudentDetails = async (student: any) => {
-    setSelectedStudent(student);
-    setAttendanceHistory([]);
-    await loadAttendanceHistory(student.id);
-    setDetailModal(true);
   };
 
   const loadAttendanceHistory = async (studentId: number) => {
@@ -328,7 +336,7 @@ export default function Attendance() {
   };
 
   const getAttendanceStatus = (day: number, month: number, year: number) => {
-    if (!selectedStudent || !attendanceHistory || attendanceHistory.length === 0)
+    if (!selectedStudentId || !attendanceHistory || attendanceHistory.length === 0)
       return null;
 
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -468,6 +476,168 @@ export default function Attendance() {
         >
           <Ionicons name="chevron-forward" size={24} color="#2563EB" />
         </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Render attendance history for selected student
+  const renderAttendanceHistory = () => {
+    if (!showHistory || !selectedStudentDetails) return null;
+
+    return (
+      <View style={styles.historyContainer}>
+        <View style={styles.historyHeader}>
+          <Text style={styles.historyTitle}>Attendance History</Text>
+          <View style={styles.selectedStudentBadge}>
+            <Text style={styles.selectedStudentName}>
+              {selectedStudentDetails.student_name}
+            </Text>
+            <Text style={styles.selectedStudentReg}>
+              {selectedStudentDetails.registration_number}
+            </Text>
+          </View>
+        </View>
+
+        {/* Month Selector with Stats */}
+        {renderMonthSelector()}
+
+        {/* History Calendar */}
+        <View style={styles.historyCalendarContainer}>
+          <View style={styles.weekDaysRow}>
+            {weekDays.map((day) => (
+              <Text key={day} style={styles.historyWeekDayText}>
+                {day}
+              </Text>
+            ))}
+          </View>
+
+          <View style={styles.calendarGrid}>
+            {getCalendarWeeks(historyMonth, historyYear).map(
+              (week, weekIndex) => (
+                <View key={weekIndex} style={styles.calendarWeek}>
+                  {week.map((day, dayIndex) => {
+                    const status = day
+                      ? getAttendanceStatus(
+                          day,
+                          historyMonth,
+                          historyYear,
+                        )
+                      : null;
+                    const isToday =
+                      day === new Date().getDate() &&
+                      historyMonth === new Date().getMonth() &&
+                      historyYear === new Date().getFullYear();
+
+                    const dateObj = day
+                      ? new Date(historyYear, historyMonth, day)
+                      : null;
+                    const dayOfWeek = dateObj
+                      ? dateObj.toLocaleDateString("en-US", {
+                          weekday: "long",
+                        })
+                      : null;
+                    const hasSession = dayOfWeek
+                      ? sessions.some(
+                          (s) => s.day_of_week === dayOfWeek,
+                        )
+                      : false;
+
+                    return (
+                      <View
+                        key={dayIndex}
+                        style={[
+                          styles.historyDay,
+                          day === null && styles.calendarDayEmpty,
+                          status === "Present" &&
+                            styles.historyDayPresent,
+                          status === "Absent" &&
+                            styles.historyDayAbsent,
+                          isToday && !status && styles.historyDayToday,
+                          hasSession &&
+                            !status &&
+                            styles.historyDaySession,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.historyDayText,
+                            day === null &&
+                              styles.calendarDayTextEmpty,
+                            status === "Present" &&
+                              styles.historyDayTextPresent,
+                            status === "Absent" &&
+                              styles.historyDayTextAbsent,
+                            isToday &&
+                              !status &&
+                              styles.historyDayTextToday,
+                            hasSession &&
+                              !status &&
+                              styles.historyDayTextSession,
+                          ]}
+                        >
+                          {day || ""}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ),
+            )}
+          </View>
+
+          {/* History Modal Legend - Full legend with Present and Absent */}
+          <View style={styles.sessionLegendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, styles.legendDotPresent]} />
+              <Text style={styles.legendText}>Present</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, styles.legendDotAbsent]} />
+              <Text style={styles.legendText}>Absent</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, styles.legendDotSession]} />
+              <Text style={styles.legendText}>Session Day</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, styles.legendDotToday]} />
+              <Text style={styles.legendText}>Today</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Overall Attendance Summary */}
+        <View style={styles.attendanceSummary}>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryNumber}>{stats.present}</Text>
+              <Text style={styles.summaryLabel}>Present</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryNumber}>{stats.absent}</Text>
+              <Text style={styles.summaryLabel}>Absent</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryNumber}>{stats.total}</Text>
+              <Text style={styles.summaryLabel}>Total</Text>
+            </View>
+          </View>
+          <View style={styles.percentageContainer}>
+            <Text style={styles.percentageText}>
+              Overall Attendance: {stats.percentage}%
+            </Text>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${stats.percentage}%` },
+                ]}
+              />
+            </View>
+          </View>
+        </View>
       </View>
     );
   };
@@ -692,8 +862,16 @@ export default function Attendance() {
             scrollEnabled={false}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.studentItem}
-                onPress={() => toggleStudentSelection(item.id)}
+                style={[
+                  styles.studentItem,
+                  selectedStudentId === item.id && styles.studentItemSelected
+                ]}
+                onPress={() => {
+                  // Toggle selection for attendance marking
+                  toggleStudentSelection(item.id);
+                  // Set as selected student for history view
+                  setSelectedStudentId(prevId => prevId === item.id ? null : item.id);
+                }}
               >
                 <View style={styles.studentCheckbox}>
                   {selectedStudents.includes(item.id) && (
@@ -707,12 +885,11 @@ export default function Attendance() {
                     {item.age_group_name || "No Group"}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.viewBtn}
-                  onPress={() => viewStudentDetails(item)}
-                >
-                  <Ionicons name="eye-outline" size={20} color="#2563EB" />
-                </TouchableOpacity>
+                <View style={styles.selectionIndicator}>
+                  {selectedStudentId === item.id && (
+                    <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+                  )}
+                </View>
               </TouchableOpacity>
             )}
           />
@@ -729,209 +906,11 @@ export default function Attendance() {
               Mark Attendance ({selectedStudents.length})
             </Text>
           </TouchableOpacity>
+
+          {/* Attendance History Section - Directly displayed below */}
+          {renderAttendanceHistory()}
         </View>
       </ScrollView>
-
-      {/* Student Details Modal */}
-      <Modal
-        visible={detailModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDetailModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Student Details</Text>
-              <TouchableOpacity onPress={() => setDetailModal(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            {selectedStudent && (
-              <>
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Name</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedStudent.student_name}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Registration Number</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedStudent.registration_number}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Contact</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedStudent.contact_number || "N/A"}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Parent Contact</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedStudent.parent_contact || "N/A"}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Email</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedStudent.email || "N/A"}
-                  </Text>
-                </View>
-
-                <Text style={styles.historyTitle}>Attendance History</Text>
-
-                {/* Month Selector with Stats */}
-                {renderMonthSelector()}
-
-                {/* History Calendar */}
-                <View style={styles.historyCalendarContainer}>
-                  <View style={styles.weekDaysRow}>
-                    {weekDays.map((day) => (
-                      <Text key={day} style={styles.historyWeekDayText}>
-                        {day}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <View style={styles.calendarGrid}>
-                    {getCalendarWeeks(historyMonth, historyYear).map(
-                      (week, weekIndex) => (
-                        <View key={weekIndex} style={styles.calendarWeek}>
-                          {week.map((day, dayIndex) => {
-                            const status = day
-                              ? getAttendanceStatus(
-                                  day,
-                                  historyMonth,
-                                  historyYear,
-                                )
-                              : null;
-                            const isToday =
-                              day === new Date().getDate() &&
-                              historyMonth === new Date().getMonth() &&
-                              historyYear === new Date().getFullYear();
-
-                            const dateObj = day
-                              ? new Date(historyYear, historyMonth, day)
-                              : null;
-                            const dayOfWeek = dateObj
-                              ? dateObj.toLocaleDateString("en-US", {
-                                  weekday: "long",
-                                })
-                              : null;
-                            const hasSession = dayOfWeek
-                              ? sessions.some(
-                                  (s) => s.day_of_week === dayOfWeek,
-                                )
-                              : false;
-
-                            return (
-                              <View
-                                key={dayIndex}
-                                style={[
-                                  styles.historyDay,
-                                  day === null && styles.calendarDayEmpty,
-                                  status === "Present" &&
-                                    styles.historyDayPresent,
-                                  status === "Absent" &&
-                                    styles.historyDayAbsent,
-                                  isToday && !status && styles.historyDayToday,
-                                  hasSession &&
-                                    !status &&
-                                    styles.historyDaySession,
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.historyDayText,
-                                    day === null &&
-                                      styles.calendarDayTextEmpty,
-                                    status === "Present" &&
-                                      styles.historyDayTextPresent,
-                                    status === "Absent" &&
-                                      styles.historyDayTextAbsent,
-                                    isToday &&
-                                      !status &&
-                                      styles.historyDayTextToday,
-                                    hasSession &&
-                                      !status &&
-                                      styles.historyDayTextSession,
-                                  ]}
-                                >
-                                  {day || ""}
-                                </Text>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      ),
-                    )}
-                  </View>
-
-                  {/* History Modal Legend - Full legend with Present and Absent */}
-                  <View style={styles.sessionLegendContainer}>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, styles.legendDotPresent]} />
-                      <Text style={styles.legendText}>Present</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, styles.legendDotAbsent]} />
-                      <Text style={styles.legendText}>Absent</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, styles.legendDotSession]} />
-                      <Text style={styles.legendText}>Session Day</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, styles.legendDotToday]} />
-                      <Text style={styles.legendText}>Today</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Overall Attendance Summary */}
-                <View style={styles.attendanceSummary}>
-                  <View style={styles.summaryRow}>
-                    <View style={styles.summaryItem}>
-                      <Text style={styles.summaryNumber}>{stats.present}</Text>
-                      <Text style={styles.summaryLabel}>Present</Text>
-                    </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryItem}>
-                      <Text style={styles.summaryNumber}>{stats.absent}</Text>
-                      <Text style={styles.summaryLabel}>Absent</Text>
-                    </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryItem}>
-                      <Text style={styles.summaryNumber}>{stats.total}</Text>
-                      <Text style={styles.summaryLabel}>Total</Text>
-                    </View>
-                  </View>
-                  <View style={styles.percentageContainer}>
-                    <Text style={styles.percentageText}>
-                      Overall Attendance: {stats.percentage}%
-                    </Text>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${stats.percentage}%` },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }

@@ -189,12 +189,7 @@ export default StyleSheet.create({
     borderRadius: 6,
     marginRight: 4,
   },
-  legendDotPresent: {
-    backgroundColor: "#22C55E",
-  },
-  legendDotAbsent: {
-    backgroundColor: "#EF4444",
-  },
+
   legendDotToday: {
     backgroundColor: "transparent",
     borderWidth: 2,
@@ -203,11 +198,7 @@ export default StyleSheet.create({
   legendDotSelected: {
     backgroundColor: "#2563EB",
   },
-  legendDotSession: {
-    backgroundColor: "#E2E8F0",
-    borderWidth: 1,
-    borderColor: "#94A3B8",
-  },
+
   legendText: {
     fontSize: 12,
     color: "#64748B",
@@ -389,13 +380,7 @@ export default StyleSheet.create({
     color: "#0F172A",
     fontWeight: "500",
   },
-  historyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginTop: 20,
-    marginBottom: 12,
-  },
+
   historyNavigation: {
     flexDirection: "row",
     alignItems: "center",
@@ -471,18 +456,8 @@ export default StyleSheet.create({
     backgroundColor: "#EF4444",
     borderRadius: 17.5,
   },
-  historyDayToday: {
-    borderWidth: 2,
-    borderColor: "#2563EB",
-    borderRadius: 17.5,
-    backgroundColor: "transparent",
-  },
-  historyDaySession: {
-    backgroundColor: "#F1F5F9",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 17.5,
-  },
+ 
+
   historyDayText: {
     fontSize: 13,
     color: "#0F172A",
@@ -495,20 +470,7 @@ export default StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "bold",
   },
-  historyDayTextToday: {
-    color: "#2563EB",
-    fontWeight: "bold",
-  },
-  historyDayTextSession: {
-    color: "#475569",
-  },
-  sessionIndicator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#94A3B8",
-    marginTop: 2,
-  },
+
   sessionLegendContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -573,4 +535,110 @@ export default StyleSheet.create({
     backgroundColor: "#22C55E",
     borderRadius: 4,
   },
+  // Add these to your attendance.styles.ts file
+
+// History section styles
+historyContainer: {
+  marginTop: 24,
+  padding: 16,
+  backgroundColor: '#F8FAFC',
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#E2E8F0',
+},
+
+historyHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 16,
+  flexWrap: 'wrap',
+  gap: 8,
+},
+
+historyTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#1E293B',
+},
+
+selectedStudentBadge: {
+  backgroundColor: '#DBEAFE',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 8,
+  alignItems: 'flex-end',
+},
+
+selectedStudentName: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#1E40AF',
+},
+
+selectedStudentReg: {
+  fontSize: 12,
+  color: '#3B82F6',
+  marginTop: 2,
+},
+
+// Student item selected state
+studentItemSelected: {
+  backgroundColor: '#EFF6FF',
+  borderColor: '#2563EB',
+  borderWidth: 2,
+},
+
+// Selection indicator (replacing the unused sessionIndicator)
+selectionIndicator: {
+  width: 30,
+  height: 30,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+// Make sure these existing styles are defined or add them if missing
+sessionIndicator: {
+  width: 30,
+  height: 30,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+// If you don't have these already, add them too
+historyDayTextSession: {
+  color: '#3B82F6',
+},
+
+historyDaySession: {
+  backgroundColor: '#EFF6FF',
+  borderWidth: 1,
+  borderColor: '#93C5FD',
+},
+
+historyDayTextToday: {
+  color: '#2563EB',
+  fontWeight: '700',
+},
+
+historyDayToday: {
+  backgroundColor: '#DBEAFE',
+  borderWidth: 2,
+  borderColor: '#2563EB',
+},
+
+legendDotSession: {
+  backgroundColor: '#EFF6FF',
+  borderWidth: 1,
+  borderColor: '#93C5FD',
+},
+
+// If you need to add missing legend items
+legendDotPresent: {
+  backgroundColor: '#10B981',
+},
+
+legendDotAbsent: {
+  backgroundColor: '#EF4444',
+},
 });
