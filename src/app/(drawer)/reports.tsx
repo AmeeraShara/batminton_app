@@ -50,7 +50,7 @@ export default function Reports() {
   const [payments, setPayments] = useState<any[]>([]);
 
   // Filter states
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth().toString());
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
@@ -70,7 +70,7 @@ export default function Reports() {
     overdueCount: 0,
   });
 
-  // Calendar state
+  // Selected student for detail view
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
@@ -84,8 +84,6 @@ export default function Reports() {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ];
-
-  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   // Year options
   const yearOptions = [
@@ -223,39 +221,16 @@ export default function Reports() {
 
   const getTotalSessionDays = () => {
     const year = parseInt(selectedYear);
-    const month = parseInt(selectedMonth);
-    return getSessionDaysCountForMonth(year, month);
-  };
-
-  const getCalendarWeeks = (month: number, year: number) => {
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDayOfWeek = firstDay.getDay();
-
-    const weeks = [];
-    let currentWeek = [];
-
-    for (let i = 0; i < startDayOfWeek; i++) {
-      currentWeek.push(null);
+    const month = selectedMonth ? parseInt(selectedMonth) : -1;
+    
+    let total = 0;
+    const startMonth = month >= 0 ? month : 0;
+    const endMonth = month >= 0 ? month : 11;
+    
+    for (let m = startMonth; m <= endMonth; m++) {
+      total += getSessionDaysCountForMonth(year, m);
     }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      currentWeek.push(day);
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-
-    if (currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
-      }
-      weeks.push(currentWeek);
-    }
-
-    return weeks;
+    return total;
   };
 
   const getAttendanceStatus = (studentId: number, day: number, month: number, year: number): string | null => {
@@ -287,20 +262,28 @@ export default function Reports() {
     }
 
     const year = parseInt(selectedYear);
-    const month = parseInt(selectedMonth);
-    const sessionDateStrings = getSessionDateStrings(year, month);
-    const totalSessionDays = sessionDateStrings.length;
+    const displayMonths = selectedMonth ? [parseInt(selectedMonth)] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
     const reportData = filteredStudents.map(student => {
-      let attendedCount = 0;
+      let totalAttended = 0;
       const dailyStatus: { [key: string]: string } = {};
+      const monthlyAttendance: { [key: string]: number[] } = {};
 
-      sessionDateStrings.forEach(dateStr => {
-        const status = getAttendanceStatus(student.id, parseInt(dateStr.split('-')[2]), month, year);
-        dailyStatus[dateStr] = status || 'Absent';
-        if (status === 'Present') {
-          attendedCount++;
-        }
+      displayMonths.forEach(monthIndex => {
+        const sessionDays = getSessionDaysForMonth(year, monthIndex);
+        const attendedDays: number[] = [];
+        
+        sessionDays.forEach(date => {
+          const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          const status = getAttendanceStatus(student.id, date.getDate(), monthIndex, year);
+          dailyStatus[dateStr] = status || 'Absent';
+          if (status === 'Present') {
+            attendedDays.push(date.getDate());
+            totalAttended++;
+          }
+        });
+        
+        monthlyAttendance[monthShort[monthIndex]] = attendedDays;
       });
 
       return {
@@ -308,23 +291,37 @@ export default function Reports() {
         student_name: student.student_name,
         registration_number: student.registration_number || 'N/A',
         age_group_name: ageGroups.find(g => g.id === student.age_group_id)?.age_group_name || 'N/A',
-        attended: attendedCount,
-        total_session_days: totalSessionDays,
-        attendance_percentage: totalSessionDays > 0 ? Math.round((attendedCount / totalSessionDays) * 100) : 0,
+        attended: totalAttended,
+        monthly_attendance: monthlyAttendance,
         daily_status: dailyStatus,
       };
     });
 
-    reportData.sort((a, b) => b.attendance_percentage - a.attendance_percentage);
-    setAttendanceData(reportData);
+    // Calculate total session days per student
+    const reportDataWithStats = reportData.map(student => {
+      const displayMonthsList = selectedMonth ? [parseInt(selectedMonth)] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+      let totalSessionDays = 0;
+      displayMonthsList.forEach(monthIndex => {
+        totalSessionDays += getSessionDaysCountForMonth(year, monthIndex);
+      });
+      
+      return {
+        ...student,
+        total_session_days: totalSessionDays,
+        attendance_percentage: totalSessionDays > 0 ? Math.round((student.attended / totalSessionDays) * 100) : 0,
+      };
+    });
+
+    reportDataWithStats.sort((a, b) => b.attendance_percentage - a.attendance_percentage);
+    setAttendanceData(reportDataWithStats);
 
     if (selectedStudentId) {
-      const student = reportData.find(s => s.student_id === selectedStudentId);
+      const student = reportDataWithStats.find(s => s.student_id === selectedStudentId);
       setSelectedStudent(student || null);
     }
 
-    const totalAttended = reportData.reduce((sum, s) => sum + s.attended, 0);
-    const totalPossible = reportData.reduce((sum, s) => sum + s.total_session_days, 0);
+    const totalAttended = reportDataWithStats.reduce((sum, s) => sum + s.attended, 0);
+    const totalPossible = reportDataWithStats.reduce((sum, s) => sum + s.total_session_days, 0);
     const overallPercentage = totalPossible > 0 ? Math.round((totalAttended / totalPossible) * 100) : 0;
 
     setReportStats({
@@ -345,10 +342,10 @@ export default function Reports() {
     }
 
     const year = parseInt(selectedYear);
-    const month = parseInt(selectedMonth);
+    const month = selectedMonth ? parseInt(selectedMonth) : -1;
 
     let filteredPayments = [...payments];
-    if (selectedMonth) {
+    if (month >= 0) {
       filteredPayments = filteredPayments.filter(p => {
         if (!p.created_at) return false;
         const date = new Date(p.created_at);
@@ -442,9 +439,7 @@ export default function Reports() {
 
   const generateAttendanceHTML = () => {
     const year = parseInt(selectedYear);
-    const month = parseInt(selectedMonth);
-    const sessionDateStrings = getSessionDateStrings(year, month);
-    const weeks = getCalendarWeeks(month, year);
+    const displayMonths = selectedMonth ? [parseInt(selectedMonth)] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     
     let html = `
       <html>
@@ -457,74 +452,60 @@ export default function Reports() {
             .filters { background: #F3F4F6; padding: 10px 15px; border-radius: 6px; margin: 15px 0; }
             .stats { display: flex; gap: 15px; margin: 20px 0; }
             .stat-box { flex: 1; background: #EFF6FF; padding: 15px; border-radius: 8px; text-align: center; }
-            .stat-number { font-size: 28px; font-weight: 700; color: #1E40AF; }
+            .stat-number { font-size: 28px; font-weight: 700; color: #000000; }
             .stat-label { font-size: 12px; color: #6B7280; margin-top: 5px; }
-            .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin: 10px 0; }
-            .calendar-header { font-weight: 600; padding: 8px; text-align: center; background: #E5E7EB; }
-            .calendar-day { padding: 8px; text-align: center; border: 1px solid #E5E7EB; min-height: 30px; }
-            .day-present { background: #D1FAE5; color: #065F46; }
-            .day-absent { background: #FEE2E2; color: #991B1B; }
-            .day-session { background: #FEF3C7; color: #92400E; }
-            .day-empty { background: #F9FAFB; }
-            .student-list { margin-top: 20px; }
-            .student-item { padding: 8px; border-bottom: 1px solid #E5E7EB; }
-            .student-name { font-weight: 600; }
-            .student-percentage { float: right; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+            th { background-color: #939497; color: white; padding: 10px 8px; text-align: center; border: 1px solid #939497; }
+            td { padding: 8px; border: 1px solid #E5E7EB; text-align: center; }
+            tr:nth-child(even) { background-color: #F9FAFB; }
             .footer { margin-top: 20px; color: #6B7280; font-size: 12px; border-top: 1px solid #E5E7EB; padding-top: 15px; text-align: center; }
+            .attended { font-weight: 600; color: #000000; }
+            .student-name { text-align: left; font-weight: 600; }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>Attendance Report - ${monthNames[month]} ${year}</h1>
+            <h1>Filtered Attendance Report - ${selectedYear}</h1>
             <div class="sub-header">Generated: ${new Date().toLocaleString()}</div>
           </div>
           <div class="filters">
-            <strong>Filters:</strong> Age Group: ${selectedAgeGroup ? ageGroups.find(g => g.id === parseInt(selectedAgeGroup))?.age_group_name || 'All' : 'All'}
+            <strong>Filters -></strong> View Type: ${selectedMonth ? 'Single Month' : 'All Months'} | 
+            Age Group: ${selectedAgeGroup ? ageGroups.find(g => g.id === parseInt(selectedAgeGroup))?.age_group_name || 'All Age Groups' : 'All Age Groups'} | 
+            Months: ${selectedMonth ? monthNames[parseInt(selectedMonth)] : 'All Months'}
           </div>
-          <div class="stats">
-            <div class="stat-box"><div class="stat-number">${reportStats.totalDaysAttended}</div><div class="stat-label">Days Attended</div></div>
-            <div class="stat-box"><div class="stat-number">${reportStats.totalSessionDays}</div><div class="stat-label">Session Days</div></div>
-            <div class="stat-box"><div class="stat-number">${reportStats.overallAttendance}%</div><div class="stat-label">Attendance</div></div>
-          </div>
-          <h3>Session Days Calendar</h3>
-          <div class="calendar-grid">
+
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
     `;
 
-    weekDays.forEach(day => {
-      html += `<div class="calendar-header">${day}</div>`;
+    displayMonths.forEach(monthIndex => {
+      html += `<th>${monthShort[monthIndex]}</th>`;
     });
+    html += `<th>Att</th><th>Tot</th><th>%</th></tr></thead><tbody>`;
 
-    weeks.forEach(week => {
-      week.forEach(day => {
-        if (day === null) {
-          html += `<div class="calendar-day day-empty"></div>`;
+    attendanceData.forEach(student => {
+      html += `<tr><td class="student-name">${student.student_name}</td>`;
+      
+      displayMonths.forEach(monthIndex => {
+        const monthKey = monthShort[monthIndex];
+        const days = student.monthly_attendance[monthKey] || [];
+        if (days.length > 0) {
+          html += `<td>${days.join(' ')}</td>`;
         } else {
-          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isSessionDay = sessionDateStrings.includes(dateStr);
-          const cssClass = isSessionDay ? 'day-session' : 'day-empty';
-          html += `<div class="calendar-day ${cssClass}">${day}</div>`;
+          html += `<td>-</td>`;
         }
       });
+      
+      html += `<td class="attended">${student.attended}</td>`;
+      html += `<td>${student.total_session_days}</td>`;
+      html += `<td class="attended">${student.attendance_percentage}%</td></tr>`;
     });
 
     html += `
-          </div>
-          <p style="font-size:12px;color:#6B7280;">Session days are highlighted in yellow.</p>
-          <h3>Student Attendance</h3>
-          <div class="student-list">
-    `;
-
-    attendanceData.forEach((student, index) => {
-      html += `
-        <div class="student-item">
-          <span class="student-name">${index + 1}. ${student.student_name}</span>
-          <span class="student-percentage">${student.attendance_percentage}% (${student.attended}/${student.total_session_days})</span>
-        </div>
-      `;
-    });
-
-    html += `
-          </div>
+            </tbody>
+          </table>
           <div class="footer">Generated from Reports System • ${new Date().toLocaleString()}</div>
         </body>
       </html>
@@ -535,23 +516,29 @@ export default function Reports() {
 
   const generateAttendanceCSV = () => {
     const year = parseInt(selectedYear);
-    const month = parseInt(selectedMonth);
-    const sessionDateStrings = getSessionDateStrings(year, month);
+    const displayMonths = selectedMonth ? [parseInt(selectedMonth)] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     
     let csv = '\uFEFF';
-    csv += 'Student Name,Registration Number,Age Group,';
-    sessionDateStrings.forEach(date => {
-      csv += `${date},`;
+    let headers = ['Student Name'];
+    displayMonths.forEach(monthIndex => {
+      headers.push(monthShort[monthIndex]);
     });
-    csv += 'Attended,Session Days,Percentage\n';
+    headers.push('Att', 'Tot', '%');
+    csv += headers.join(',') + '\n';
 
     attendanceData.forEach(student => {
-      csv += `"${student.student_name}","${student.registration_number}","${student.age_group_name}",`;
-      sessionDateStrings.forEach(date => {
-        const status = student.daily_status[date] || 'Absent';
-        csv += `${status === 'Present' ? 'P' : 'A'},`;
+      const row = [`"${student.student_name}"`];
+      
+      displayMonths.forEach(monthIndex => {
+        const monthKey = monthShort[monthIndex];
+        const days = student.monthly_attendance[monthKey] || [];
+        row.push(`"${days.join(' ')}"`);
       });
-      csv += `${student.attended},${student.total_session_days},${student.attendance_percentage}%\n`;
+      
+      row.push(student.attended);
+      row.push(student.total_session_days);
+      row.push(`${student.attendance_percentage}%`);
+      csv += row.join(',') + '\n';
     });
 
     return csv;
@@ -572,8 +559,8 @@ export default function Reports() {
             .stat-number { font-size: 28px; font-weight: 700; color: #1E40AF; }
             .stat-label { font-size: 12px; color: #6B7280; margin-top: 5px; }
             table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-            th { background-color: #2563EB; color: white; padding: 10px 8px; text-align: left; border: 1px solid #2563EB; }
-            td { padding: 8px; border: 1px solid #E5E7EB; text-align: left; }
+            th { background-color: #2563EB; color: white; padding: 10px 8px; text-align: center; border: 1px solid #2563EB; }
+            td { padding: 8px; border: 1px solid #E5E7EB; text-align: center; }
             tr:nth-child(even) { background-color: #F9FAFB; }
             .status-overdue { color: #991B1B; font-weight: 600; }
             .footer { margin-top: 20px; color: #6B7280; font-size: 12px; border-top: 1px solid #E5E7EB; padding-top: 15px; text-align: center; }
@@ -639,14 +626,14 @@ export default function Reports() {
         return;
       }
       htmlContent = generateAttendanceHTML();
-      fileName = `Attendance_Report_${monthShort[parseInt(selectedMonth)]}_${selectedYear}.html`;
+      fileName = `Attendance_Report_${selectedYear}.html`;
     } else {
       if (paymentReportData.length === 0) {
         Alert.alert('No Data', 'No payment data available to export.');
         return;
       }
       htmlContent = generatePaymentHTML();
-      fileName = `Payment_Report_${monthShort[parseInt(selectedMonth)]}_${selectedYear}.html`;
+      fileName = `Payment_Report_${selectedYear}.html`;
     }
 
     setExporting(true);
@@ -690,14 +677,14 @@ export default function Reports() {
         return;
       }
       csvContent = generateAttendanceCSV();
-      fileName = `Attendance_Report_${monthShort[parseInt(selectedMonth)]}_${selectedYear}.csv`;
+      fileName = `Attendance_Report_${selectedYear}.csv`;
     } else {
       if (paymentReportData.length === 0) {
         Alert.alert('No Data', 'No payment data available to export.');
         return;
       }
       csvContent = generatePaymentCSV();
-      fileName = `Payment_Report_${monthShort[parseInt(selectedMonth)]}_${selectedYear}.csv`;
+      fileName = `Payment_Report_${selectedYear}.csv`;
     }
 
     setExporting(true);
@@ -737,130 +724,114 @@ export default function Reports() {
 
   const renderAttendanceReport = () => {
     const year = parseInt(selectedYear);
-    const month = parseInt(selectedMonth);
-    const weeks = getCalendarWeeks(month, year);
-    const sessionDateStrings = getSessionDateStrings(year, month);
+    const displayMonths = selectedMonth ? [parseInt(selectedMonth)] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
     return (
       <>
-        {/* Calendar View */}
-        <View style={styles.calendarContainer}>
-          <View style={styles.calendarHeader}>
-            <Text style={styles.calendarTitle}>
-              {monthNames[month]} {year}
-            </Text>
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, styles.legendSession]} />
-                <Text style={styles.legendText}>Session</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, styles.legendPresent]} />
-                <Text style={styles.legendText}>Present</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, styles.legendAbsent]} />
-                <Text style={styles.legendText}>Absent</Text>
-              </View>
-            </View>
+        {/* Statistics Cards */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>TOTAL DAYS ATTENDED</Text>
+            <Text style={styles.statNumber}>{reportStats.totalDaysAttended}</Text>
           </View>
-
-          <View style={styles.weekHeader}>
-            {weekDays.map((day) => (
-              <Text key={day} style={styles.weekDayText}>{day}</Text>
-            ))}
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>TOTAL SESSION DAYS</Text>
+            <Text style={styles.statNumber}>{reportStats.totalSessionDays}</Text>
           </View>
-
-          {weeks.map((week, weekIndex) => (
-            <View key={weekIndex} style={styles.calendarWeek}>
-              {week.map((day, dayIndex) => {
-                if (day === null) {
-                  return <View key={dayIndex} style={styles.calendarDayEmpty} />;
-                }
-
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isSessionDay = sessionDateStrings.includes(dateStr);
-                
-                let status = null;
-                if (isSessionDay && selectedStudent) {
-                  status = selectedStudent.daily_status[dateStr] || 'Absent';
-                }
-
-                let dayStyle = styles.calendarDayBase;
-                let dayTextStyle = styles.calendarDayText;
-                
-                if (!isSessionDay) {
-                  dayStyle = styles.calendarDayEmpty;
-                  dayTextStyle = styles.calendarDayTextEmpty;
-                } else if (status === 'Present') {
-                  dayStyle = styles.calendarDayPresent;
-                  dayTextStyle = styles.calendarDayTextPresent;
-                } else if (status === 'Absent') {
-                  dayStyle = styles.calendarDayAbsent;
-                  dayTextStyle = styles.calendarDayTextAbsent;
-                } else {
-                  dayStyle = styles.calendarDaySession;
-                  dayTextStyle = styles.calendarDayText;
-                }
-
-                return (
-                  <View key={dayIndex} style={dayStyle}>
-                    <Text style={dayTextStyle}>{day}</Text>
-                    {isSessionDay && status && (
-                      <Text style={styles.calendarDayStatus}>
-                        {status === 'Present' ? '✓' : '✗'}
-                      </Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          ))}
-
-          {!selectedStudent && attendanceData.length > 0 && (
-            <View style={styles.selectStudentPrompt}>
-              <Ionicons name="hand-left-outline" size={24} color="#94A3B8" />
-              <Text style={styles.selectStudentText}>Select a student to view attendance</Text>
-            </View>
-          )}
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>OVERALL ATTENDANCE</Text>
+            <Text style={styles.statNumber}>{reportStats.overallAttendance}%</Text>
+          </View>
         </View>
 
-        {/* Student List */}
-        <View style={styles.studentListContainer}>
-          <Text style={styles.studentListTitle}>Student Attendance</Text>
-          
-          {attendanceData.map((student, index) => {
-            const isSelected = selectedStudentId === student.student_id;
-            return (
-              <TouchableOpacity
-                key={student.student_id}
-                style={[
-                  styles.studentListItem,
-                  isSelected && styles.studentListItemSelected
-                ]}
-                onPress={() => {
-                  setSelectedStudentId(student.student_id);
-                  setSelectedStudent(student);
-                }}
-              >
-                <View style={styles.studentListLeft}>
-                  <Text style={styles.studentListNumber}>{index + 1}.</Text>
-                  <View style={styles.studentListInfo}>
-                    <Text style={styles.studentListName}>{student.student_name}</Text>
-                    <Text style={styles.studentListReg}>{student.registration_number}</Text>
-                  </View>
+
+
+        {/* Report Table - Calendar View */}
+        <View style={styles.reportSection}>
+          <View style={styles.reportHeader}>
+            <Text style={styles.reportTitle}>Attendance Report - {selectedYear}</Text>
+            <Text style={styles.reportCount}>
+              {attendanceData.length} students
+            </Text>
+          </View>
+
+          {attendanceData.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <View style={styles.tableContainer}>
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.headerCell, styles.cellStudentName]}>Student Name</Text>
+                  {displayMonths.map((monthIndex) => (
+                    <Text key={monthIndex} style={[styles.headerCell, styles.cellMonth]}>
+                      {monthShort[monthIndex]}
+                    </Text>
+                  ))}
+                  <Text style={[styles.headerCell, styles.cellAtt]}>Att</Text>
+                  <Text style={[styles.headerCell, styles.cellTot]}>Tot</Text>
+                  <Text style={[styles.headerCell, styles.cellPercent]}>%</Text>
                 </View>
-                <View style={styles.studentListRight}>
-                  <Text style={styles.studentListPercentage}>
-                    {student.attendance_percentage}%
-                  </Text>
-                  <Text style={styles.studentListCount}>
-                    {student.attended}/{student.total_session_days}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+
+                {/* Table Body */}
+                {attendanceData.map((student, index) => {
+                  const isSelected = selectedStudentId === student.student_id;
+                  return (
+                    <TouchableOpacity
+                      key={student.student_id}
+                      style={[
+                        styles.tableRow,
+                        isSelected && styles.studentListItemSelected,
+                        index % 2 === 0 && styles.tableRowEven
+                      ]}
+                      onPress={() => {
+                        setSelectedStudentId(student.student_id);
+                        setSelectedStudent(student);
+                      }}
+                    >
+                      <Text style={[styles.tableCell, styles.cellStudentName]} numberOfLines={1}>
+                        {student.student_name}
+                      </Text>
+                      
+                      {displayMonths.map((monthIndex) => {
+                        const monthKey = monthShort[monthIndex];
+                        const attendedDays = student.monthly_attendance[monthKey] || [];
+                        const hasAttendance = attendedDays.length > 0;
+                        
+                        return (
+                          <View key={monthIndex} style={[styles.tableCell, styles.cellMonth]}>
+                            {hasAttendance ? (
+                              <Text style={styles.dayNumberText}>
+                                {attendedDays.join(' ')}
+                              </Text>
+                            ) : (
+                              <Text style={styles.noAttendance}>-</Text>
+                            )}
+                          </View>
+                        );
+                      })}
+                      
+                      <Text style={[styles.tableCell, styles.cellAtt, styles.cellValue]}>
+                        {student.attended}
+                      </Text>
+                      <Text style={[styles.tableCell, styles.cellTot, styles.cellValue]}>
+                        {student.total_session_days}
+                      </Text>
+                      <Text style={[styles.tableCell, styles.cellPercent, styles.cellPercentage]}>
+                        {student.attendance_percentage}%
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="stats-chart-outline" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyStateText}>No attendance data found</Text>
+              <Text style={styles.emptyStateSub}>
+                Click "Generate Report" to load data.
+              </Text>
+            </View>
+          )}
         </View>
       </>
     );
@@ -898,13 +869,11 @@ export default function Reports() {
             <ScrollView horizontal showsHorizontalScrollIndicator={true}>
               <View style={styles.tableContainer}>
                 <View style={styles.tableHeader}>
-                  <Text style={[styles.headerCell, styles.cellIndex]}>#</Text>
                   <Text style={[styles.headerCell, styles.cellStudent]}>Student Name</Text>
-                  <Text style={[styles.headerCell, styles.cellReg]}>Reg. #</Text>
+                  <Text style={[styles.headerCell, styles.cellReg]}>Reg</Text>
                   <Text style={[styles.headerCell, styles.cellAgeGroup]}>Age Group</Text>
                   <Text style={[styles.headerCell, styles.cellAmount]}>Total Paid</Text>
                   <Text style={[styles.headerCell, styles.cellCount]}>Payments</Text>
-                  <Text style={[styles.headerCell, styles.cellStatus]}>Overdue</Text>
                   <Text style={[styles.headerCell, styles.cellDate]}>Last Payment</Text>
                 </View>
 
@@ -915,7 +884,6 @@ export default function Reports() {
                   renderItem={({ item }) => {
                     return (
                       <View style={styles.tableRow}>
-                        <Text style={[styles.tableCell, styles.cellIndex]}>{paymentReportData.indexOf(item) + 1}</Text>
                         <Text style={[styles.tableCell, styles.cellStudent]} numberOfLines={1}>
                           {item.student_name}
                         </Text>
@@ -931,9 +899,7 @@ export default function Reports() {
                         <Text style={[styles.tableCell, styles.cellCount]}>
                           {item.payment_count}
                         </Text>
-                        <Text style={[styles.tableCell, styles.cellStatus, item.overdue_count > 0 && styles.overdueText]}>
-                          {item.overdue_count}
-                        </Text>
+
                         <Text style={[styles.tableCell, styles.cellDate]} numberOfLines={1}>
                           {formatDate(item.last_payment)}
                         </Text>
@@ -1113,56 +1079,9 @@ export default function Reports() {
           </View>
         </View>
 
-        {/* Statistics Cards - Show different stats based on tab */}
-        {activeTab === 'attendance' ? (
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>TOTAL DAYS ATTENDED</Text>
-              <Text style={styles.statNumber}>{reportStats.totalDaysAttended}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>TOTAL SESSION DAYS</Text>
-              <Text style={styles.statNumber}>{reportStats.totalSessionDays}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>OVERALL ATTENDANCE</Text>
-              <Text style={styles.statNumber}>{reportStats.overallAttendance}%</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>TOTAL COLLECTED</Text>
-              <Text style={styles.statNumber}>Rs {paymentStats.totalCollected.toFixed(2)}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>TOTAL STUDENTS</Text>
-              <Text style={styles.statNumber}>{paymentStats.totalStudents}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>OVERDUE</Text>
-              <Text style={[styles.statNumber, paymentStats.overdueCount > 0 && styles.overdueNumber]}>
-                {paymentStats.overdueCount}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.generateButton]}
-            onPress={() => {
-              if (activeTab === 'attendance') {
-                generateAttendanceReport();
-              } else {
-                generatePaymentReport();
-              }
-            }}
-          >
-            <Ionicons name="refresh-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Generate Report</Text>
-          </TouchableOpacity>
+
           
           <TouchableOpacity 
             style={[styles.actionButton, styles.exportButton]}
@@ -1197,26 +1116,7 @@ export default function Reports() {
 
         {/* Report Content */}
         {activeTab === 'attendance' ? (
-          <View style={styles.reportSection}>
-            <View style={styles.reportHeader}>
-              <Text style={styles.reportTitle}>Attendance Report</Text>
-              <Text style={styles.reportCount}>
-                {attendanceData.length} students
-              </Text>
-            </View>
-
-            {attendanceData.length > 0 ? (
-              renderAttendanceReport()
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="stats-chart-outline" size={48} color="#D1D5DB" />
-                <Text style={styles.emptyStateText}>No attendance data found</Text>
-                <Text style={styles.emptyStateSub}>
-                  Click "Generate Report" to load data.
-                </Text>
-              </View>
-            )}
-          </View>
+          renderAttendanceReport()
         ) : (
           renderPaymentReport()
         )}

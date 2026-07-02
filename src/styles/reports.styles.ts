@@ -233,6 +233,23 @@ export default StyleSheet.create({
     fontWeight: "600",
   },
 
+  // Filter Info
+  filterInfoContainer: {
+    backgroundColor: "#F1F5F9",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+
+  filterInfoText: {
+    fontSize: 12,
+    color: "#475569",
+    fontWeight: "400",
+    lineHeight: 18,
+  },
+
   // Report Section
   reportSection: {
     backgroundColor: "#FFFFFF",
@@ -267,18 +284,19 @@ export default StyleSheet.create({
     borderRadius: 12,
   },
 
-  // Table Styles (for Payment Report)
+  // Table Styles
   tableContainer: {
     minWidth: "100%",
   },
 
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#fefefe",
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    paddingVertical: 4,
   },
 
   tableRow: {
@@ -286,6 +304,12 @@ export default StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#F1F5F9",
     backgroundColor: "#FFFFFF",
+    paddingVertical: 4,
+    alignItems: "center",
+  },
+
+  tableRowEven: {
+    backgroundColor: "#F9FAFB",
   },
 
   headerCell: {
@@ -293,23 +317,74 @@ export default StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 11,
     fontWeight: "600",
-    color: "#475569",
+    color: "#688cbe",
     textAlign: "center",
   },
 
   tableCell: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     fontSize: 12,
     color: "#1E293B",
     textAlign: "center",
   },
 
-  cellIndex: {
-    width: 30,
-    minWidth: 30,
+  // Cell Widths - Attendance Report
+  cellStudentName: {
+    width: 130,
+    minWidth: 130,
+    textAlign: "left",
+    fontWeight: "500",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
 
+  cellMonth: {
+    width: 80,
+    minWidth: 80,
+    textAlign: "center",
+    paddingHorizontal: 4,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  cellAtt: {
+    width: 45,
+    minWidth: 45,
+    textAlign: "center",
+    fontWeight: "500",
+    paddingVertical: 10,
+  },
+
+  cellTot: {
+    width: 45,
+    minWidth: 45,
+    textAlign: "center",
+    fontWeight: "500",
+    paddingVertical: 10,
+  },
+
+  cellPercent: {
+    width: 55,
+    minWidth: 55,
+    textAlign: "center",
+    fontWeight: "600",
+    paddingVertical: 10,
+  },
+
+  cellValue: {
+    fontSize: 13,
+    color: "#1E293B",
+  },
+
+  cellPercentage: {
+    fontSize: 13,
+    color: "#2563EB",
+    fontWeight: "700",
+  },
+
+  // Cell Widths - Payment Report
   cellStudent: {
     width: 130,
     minWidth: 130,
@@ -355,199 +430,32 @@ export default StyleSheet.create({
     fontSize: 11,
   },
 
+  cellTotalValue: {
+    fontWeight: "700",
+    color: "#2563EB",
+  },
+
   overdueText: {
     color: "#EF4444",
     fontWeight: "600",
   },
 
-  // Calendar Styles
-  calendarContainer: {
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-
-  calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    flexWrap: "wrap",
-  },
-
-  calendarTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+  // Day Numbers
+  dayNumberText: {
+    fontSize: 11,
     color: "#1E293B",
-  },
-
-  legendContainer: {
-    flexDirection: "row",
-    gap: 12,
-    flexWrap: "wrap",
-  },
-
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-
-  legendSession: {
-    backgroundColor: "#FEF3C7",
-    borderWidth: 1,
-    borderColor: "#D97706",
-  },
-
-  legendPresent: {
-    backgroundColor: "#D1FAE5",
-    borderWidth: 1,
-    borderColor: "#059669",
-  },
-
-  legendAbsent: {
-    backgroundColor: "#FEE2E2",
-    borderWidth: 1,
-    borderColor: "#DC2626",
-  },
-
-  legendText: {
-    fontSize: 10,
-    color: "#6B7280",
-  },
-
-  weekHeader: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-
-  weekDayText: {
-    flex: 1,
+    fontWeight: "400",
+    lineHeight: 16,
     textAlign: "center",
+    flexWrap: "wrap",
+  },
+
+  noAttendance: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-
-  calendarWeek: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-
-  calendarDayBase: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 4,
-    margin: 2,
-    padding: 2,
-    minHeight: 40,
-  },
-
-  calendarDayEmpty: {
-    flex: 1,
-    aspectRatio: 1,
-    margin: 2,
-    minHeight: 40,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 2,
-  },
-
-  calendarDaySession: {
-    flex: 1,
-    aspectRatio: 1,
-    margin: 2,
-    minHeight: 40,
-    backgroundColor: "#FEF3C7",
-    borderRadius: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 2,
-  },
-
-  calendarDayPresent: {
-    flex: 1,
-    aspectRatio: 1,
-    margin: 2,
-    minHeight: 40,
-    backgroundColor: "#D1FAE5",
-    borderRadius: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 2,
-  },
-
-  calendarDayAbsent: {
-    flex: 1,
-    aspectRatio: 1,
-    margin: 2,
-    minHeight: 40,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 2,
-  },
-
-  calendarDayText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#1E293B",
-  },
-
-  calendarDayTextEmpty: {
-    fontSize: 12,
-    fontWeight: "500",
     color: "#D1D5DB",
   },
 
-  calendarDayTextPresent: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#065F46",
-  },
-
-  calendarDayTextAbsent: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#991B1B",
-  },
-
-  calendarDayStatus: {
-    fontSize: 8,
-    marginTop: 2,
-  },
-
-  selectStudentPrompt: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-    gap: 8,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 8,
-    marginTop: 12,
-  },
-
-  selectStudentText: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-
-  // Student List Styles
+  // Student List Styles (for future use)
   studentListContainer: {
     marginTop: 8,
   },
