@@ -63,8 +63,8 @@ export default function PaymentRecords() {
   ];
 
   const monthShort = [
-    "Ja", "Fe", "Ma", "Ap", "Ma", "Ju",
-    "Ju", "Au", "Se", "Oc", "No", "De"
+    "Ja", "Fe", "Mar", "Ap", "Ma", "Ju",
+    "Jul", "Au", "Se", "Oc", "No", "De"
   ];
 
   useEffect(() => {
@@ -169,7 +169,6 @@ export default function PaymentRecords() {
   };
 
   const calculateStudentStatus = () => {
-    // Get unique student IDs from filtered payments
     const studentIds = new Set(filteredPayments.map(p => p.student_id));
     
     // Count overdue students (students with any overdue payment)
@@ -1037,37 +1036,39 @@ export default function PaymentRecords() {
           </View>
         </View>
 
-        {/* Student Status Section */}
-        <View style={styles.studentStatusSection}>
-          <View style={styles.studentStatusContainer}>
-            <View style={styles.studentStatusItem}>
-              <Text style={styles.studentStatusNumber}>{studentStatus.total}</Text>
-              <Text style={styles.studentStatusLabel}>Students Displayed</Text>
-            </View>
-            
-            <View style={styles.statusDivider} />
-            
-            <View style={styles.studentStatusItem}>
-              <Text style={[styles.studentStatusNumber, styles.overdueNumber]}>
-                {studentStatus.overdue}
-              </Text>
-              <Text style={[styles.studentStatusLabel, styles.overdueLabel]}>
-                Overdue
-              </Text>
-            </View>
-            
-            <View style={styles.statusDivider} />
-            
-            <View style={styles.studentStatusItem}>
-              <Text style={[styles.studentStatusNumber, styles.upToDateNumber]}>
-                {studentStatus.upToDate}
-              </Text>
-              <Text style={[styles.studentStatusLabel, styles.upToDateLabel]}>
-                Up to date
-              </Text>
+        {/* Student Status Section - Only show in Students tab */}
+        {activeTab === 'students' && (
+          <View style={styles.studentStatusSection}>
+            <View style={styles.studentStatusContainer}>
+              <View style={styles.studentStatusItem}>
+                <Text style={styles.studentStatusNumber}>{studentStatus.total}</Text>
+                <Text style={styles.studentStatusLabel}>Students Displayed</Text>
+              </View>
+              
+              <View style={styles.statusDivider} />
+              
+              <View style={styles.studentStatusItem}>
+                <Text style={[styles.studentStatusNumber, styles.overdueNumber]}>
+                  {studentStatus.overdue}
+                </Text>
+                <Text style={[styles.studentStatusLabel, styles.overdueLabel]}>
+                  Overdue
+                </Text>
+              </View>
+              
+              <View style={styles.statusDivider} />
+              
+              <View style={styles.studentStatusItem}>
+                <Text style={[styles.studentStatusNumber, styles.upToDateNumber]}>
+                  {studentStatus.upToDate}
+                </Text>
+                <Text style={[styles.studentStatusLabel, styles.upToDateLabel]}>
+                  Up to date
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Summary Section */}
         <View style={styles.summarySection}>
