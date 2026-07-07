@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 export default function AgeGroups() {
-  const API = "http://192.168.8.102:5000/api/agegroups";
+  const API = "http://192.168.100.169:5000/api/agegroups";
 
   const [groups, setGroups] = useState<any[]>([]);
   const [modal, setModal] = useState(false);

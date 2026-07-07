@@ -24,7 +24,7 @@ export default function Login() {
       }
 
       const response = await axios.post(
-        "http://192.168.8.102:5000/api/auth/login",
+        "http://192.168.100.169:5000/api/auth/login",
 
         {
           identifier: user,

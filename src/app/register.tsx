@@ -42,7 +42,7 @@ export default function Register() {
       }
 
       const response = await axios.post(
-        "http://192.168.8.102:5000/api/auth/register",
+        "http://192.168.100.169:5000/api/auth/register",
         {
           name,
           role: "administrator",

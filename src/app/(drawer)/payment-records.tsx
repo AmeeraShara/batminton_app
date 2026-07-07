@@ -30,9 +30,9 @@ function isErrorWithMessage(error: unknown): error is { message: string } {
 
 export default function PaymentRecords() {
   // API URLs - Update with your actual IP
-  const API = "http://192.168.8.102:5000/api/payments";
-  const STUDENTS_API = "http://192.168.8.102:5000/api/students";
-  const AGE_GROUPS_API = "http://192.168.8.102:5000/api/agegroups";
+  const API = "http://192.168.100.169:5000/api/payments";
+  const STUDENTS_API = "http://192.168.100.169:5000/api/students";
+  const AGE_GROUPS_API = "http://192.168.100.169:5000/api/agegroups";
 
   // State Management
   const [payments, setPayments] = useState<any[]>([]);

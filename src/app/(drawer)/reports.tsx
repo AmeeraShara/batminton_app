@@ -29,7 +29,7 @@ function isErrorWithMessage(error: unknown): error is { message: string } {
 
 export default function Reports() {
   // API URLs - Update with your actual IP
-  const API = "http://192.168.8.102:5000/api";
+  const API = "http://192.168.100.169:5000/api";
   const ATTENDANCE_API = `${API}/attendance`;
   const STUDENTS_API = `${API}/students`;
   const AGE_GROUPS_API = `${API}/agegroups`;

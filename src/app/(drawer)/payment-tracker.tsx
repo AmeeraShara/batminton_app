@@ -17,8 +17,8 @@ import {
 
 export default function PaymentTracker() {
   // API Endpoints - Update with your actual IP
-  const API = "http://192.168.8.102:5000/api/payments";
-  const STUDENTS_API = "http://192.168.8.102:5000/api/students";
+  const API = "http://192.168.100.169:5000/api/payments";
+  const STUDENTS_API = "http://192.168.100.169:5000/api/students";
 
   // State Management
   const [payments, setPayments] = useState<any[]>([]);
