@@ -37,3 +37,6 @@ app.use("/api/attendance", attendanceRoutes);
 //Payment
 const paymentRoutes = require("./routes/paymentRoutes");
 app.use("/api/payments", paymentRoutes);
+
+const managementTeamRoutes = require("./routes/managementTeamRoutes");
+app.use("/api/management-team", managementTeamRoutes);
