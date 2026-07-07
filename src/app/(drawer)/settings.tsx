@@ -32,7 +32,6 @@ interface ApiResponse {
 
 // Updated API URL - use your computer's IP address
 const getApiBaseUrl = () => {
-  // Use your computer's IP address from the successful request
   return 'http://192.168.100.169:5000/api/management-team';
 };
 
@@ -100,23 +99,40 @@ export default function Settings() {
   };
 
   const handleAddMember = async () => {
-    if (!name.trim() || !mobile.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !role) {
-      Alert.alert('Error', 'Please fill in all fields');
+    // Validate required fields
+    if (!name.trim() || !mobile.trim() || !email.trim() || !role) {
+      Alert.alert('Error', 'Please fill in all required fields (Name, Mobile, Email, Role)');
       return;
     }
 
-    if (password !== confirmPassword) {
+    // Only validate password for new members
+    if (!editId && (!password.trim() || !confirmPassword.trim())) {
+      Alert.alert('Error', 'Password is required for new members');
+      return;
+    }
+
+    // Validate password match only if password is provided
+    if (password && password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
-    const memberData = {
+    // Build the member data
+    const memberData: any = {
       name: name.trim(),
       mobile: mobile.trim(),
       email: email.trim(),
-      password: password.trim(),
       role: role,
     };
+
+    // Only include password if it's provided (for updates) or always for new members
+    if (password.trim()) {
+      memberData.password = password.trim();
+    } else if (!editId) {
+      // For new members, password is required
+      Alert.alert('Error', 'Password is required');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -129,6 +145,9 @@ export default function Settings() {
         method = 'PUT';
       }
 
+      console.log('Saving to:', url);
+      console.log('Method:', method);
+      console.log('Data:', memberData);
       
       const response = await fetch(url, {
         method: method,
@@ -138,13 +157,15 @@ export default function Settings() {
         body: JSON.stringify(memberData),
       });
 
+      const responseText = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response body:', responseText);
+
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Response error:', text);
-        throw new Error(`HTTP error! status: ${response.status}\n${text}`);
+        throw new Error(`HTTP error! status: ${response.status}\n${responseText}`);
       }
 
-      const data: ApiResponse = await response.json();
+      const data: ApiResponse = JSON.parse(responseText);
 
       Alert.alert('Success', data.message || 'Team member saved successfully');
       await fetchTeamMembers();
@@ -152,7 +173,6 @@ export default function Settings() {
       resetForm();
     } catch (error) {
       console.error('Error saving team member:', error);
-      // Fix: Type the error properly
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       Alert.alert('Error', `Failed to save team member.\n\n${errorMessage}`);
     } finally {
@@ -172,15 +192,22 @@ export default function Settings() {
           onPress: async () => {
             try {
               setLoading(true);
-              const response = await fetch(`${getApiBaseUrl()}/${id}`, {
+              const url = `${getApiBaseUrl()}/${id}`;
+              console.log('Deleting from:', url);
+              
+              const response = await fetch(url, {
                 method: 'DELETE',
               });
               
+              const responseText = await response.text();
+              console.log('Delete response status:', response.status);
+              console.log('Delete response body:', responseText);
+              
               if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}\n${responseText}`);
               }
               
-              const data: ApiResponse = await response.json();
+              const data: ApiResponse = JSON.parse(responseText);
               
               Alert.alert('Success', data.message || 'Team member deleted successfully');
               await fetchTeamMembers();
@@ -198,12 +225,13 @@ export default function Settings() {
   };
 
   const handleEditMember = (member: TeamMember) => {
+    console.log('Editing member:', member);
     setEditId(member.id);
     setName(member.name);
     setMobile(member.mobile);
     setEmail(member.email);
     setRole(member.role);
-    setPassword('');
+    setPassword(''); // Clear password field for edit
     setConfirmPassword('');
     setModalVisible(true);
   };
@@ -361,13 +389,16 @@ export default function Settings() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                editable={!loading}
+                editable={!loading && !editId} // Disable email editing when updating
                 placeholderTextColor="#94A3B8"
               />
+              {editId && (
+                <Text style={styles.helperText}>Email cannot be changed</Text>
+              )}
 
               <TextInput
                 style={styles.input}
-                placeholder="Enter password"
+                placeholder={editId ? "Enter new password (optional)" : "Enter password"}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -377,7 +408,7 @@ export default function Settings() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Confirm password"
+                placeholder={editId ? "Confirm new password" : "Confirm password"}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -569,6 +600,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 16,
     color: "#111827",
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: -8,
+    marginBottom: 12,
+    fontStyle: 'italic',
   },
   roleLabel: {
     fontSize: 14,
