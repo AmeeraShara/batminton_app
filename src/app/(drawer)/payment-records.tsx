@@ -130,7 +130,7 @@ export default function PaymentRecords() {
 
   useEffect(() => {
     calculateStudentStatus();
-  }, [filteredPayments]);
+  }, [filteredPayments, payments]);
 
   const loadData = async () => {
     setLoading(true);
@@ -227,26 +227,50 @@ export default function PaymentRecords() {
   const calculateStudentStatus = () => {
     // Get student IDs from filtered payments
     const filteredStudentIds = new Set(filteredPayments.map(p => p.student_id));
+    
     const overdueStudents = new Set();
     const upToDateStudents = new Set();
+    const current = getCurrentMonthYear();
     
     // Check each student that has payments in the filtered list
     filteredStudentIds.forEach(studentId => {
       let hasOverdue = false;
-      const current = getCurrentMonthYear();
+      let allPastMonthsPaid = true;
+      let hasAnyPayment = false;
       
       // Check all past months from Jan to last month
       for (let month = 0; month < current.month; month++) {
-        const status = getMonthStatus(studentId, month);
-        if (status === 'OVERDUE') {
-          hasOverdue = true;
-          break;
+        const monthName = monthShort[month];
+        
+        // Find payment for this student and month from ALL payments (not filtered)
+        const payment = payments.find(p => 
+          p.student_id === studentId && 
+          p.payment_month?.toLowerCase().includes(monthName.toLowerCase())
+        );
+        
+        // If payment exists, check its status
+        if (payment) {
+          hasAnyPayment = true;
+          const status = payment.status?.toUpperCase() || 'PAID';
+          if (status !== 'PAID') {
+            hasOverdue = true;
+            allPastMonthsPaid = false;
+          }
+        } else {
+          // No payment for this past month
+          allPastMonthsPaid = false;
+          // Only mark as overdue if the student has at least one payment record
+          // (meaning they should be paying but didn't)
+          const hasSomePayment = payments.some(p => p.student_id === studentId);
+          if (hasSomePayment) {
+            hasOverdue = true;
+          }
         }
       }
       
       if (hasOverdue) {
         overdueStudents.add(studentId);
-      } else {
+      } else if (allPastMonthsPaid && hasAnyPayment) {
         upToDateStudents.add(studentId);
       }
     });
@@ -419,7 +443,7 @@ export default function PaymentRecords() {
             }
             .header {
               margin-bottom: 20px;
-              border-bottom: 2px solid #2563EB;
+              border-bottom: 2px solid #565657;
               padding-bottom: 15px;
             }
             h1 { 
@@ -456,12 +480,12 @@ export default function PaymentRecords() {
               font-size: 13px;
             }
             th { 
-              background-color: #2563EB; 
+              background-color: #565657; 
               color: white; 
               padding: 10px 8px; 
               text-align: left;
               font-weight: 600;
-              border: 1px solid #2563EB;
+              border: 1px solid #565657;
             }
             td { 
               padding: 8px; 
@@ -539,15 +563,14 @@ export default function PaymentRecords() {
           </div>
           
           <div class="summary">
-            <strong>Total Students:</strong> ${filteredStudents.length} | 
-            <strong>With Overdue:</strong> ${studentStatus.overdue} | 
-            <strong>Up to Date:</strong> ${studentStatus.upToDate}
+            <strong>Total Students:</strong> ${filteredStudents.length} 
+
           </div>
           
           <table>
             <thead>
               <tr>
-                <th>#</th>
+            
                 <th>Reg. Number</th>
                 <th>Student Name</th>
                 <th>Age Group</th>
@@ -570,7 +593,6 @@ export default function PaymentRecords() {
       
       html += `
         <tr>
-          <td>${rowNum}</td>
           <td>${student.registration_number || 'N/A'}</td>
           <td><strong>${student.student_name}</strong></td>
           <td>${ageGroup?.age_group_name || 'N/A'}</td>
@@ -635,7 +657,7 @@ export default function PaymentRecords() {
             h1 { color: #1a1a2e; border-bottom: 2px solid #2563EB; padding-bottom: 10px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th { 
-              background-color: #2563EB; 
+              background-color: #565657; 
               color: white; 
               padding: 12px; 
               text-align: left;
@@ -874,11 +896,11 @@ export default function PaymentRecords() {
         }
         
         // Students CSV
-        const headers = ['#', 'Reg. Number', 'Student Name', 'Age Group', ...monthShort];
+        const headers = [ 'Reg. Number', 'Student Name', 'Age Group', ...monthShort];
         const rows = filteredStudents.map((student, index) => {
           const ageGroup = ageGroups.find(g => g.id === student.age_group_id);
           const row = [
-            index + 1,
+           
             `"${student.registration_number || 'N/A'}"`,
             `"${student.student_name}"`,
             `"${ageGroup?.age_group_name || 'N/A'}"`
@@ -1150,40 +1172,7 @@ export default function PaymentRecords() {
           </View>
         </View>
 
-        {/* Student Status Section - Only show in Students tab */}
-        {activeTab === 'students' && (
-          <View style={styles.studentStatusSection}>
-            <View style={styles.studentStatusContainer}>
-              <View style={styles.studentStatusItem}>
-                <Text style={styles.studentStatusNumber}>{studentStatus.total}</Text>
-                <Text style={styles.studentStatusLabel}>Students Displayed</Text>
-              </View>
-              
-              <View style={styles.statusDivider} />
-              
-              <View style={styles.studentStatusItem}>
-                <Text style={[styles.studentStatusNumber, styles.overdueNumber]}>
-                  {studentStatus.overdue}
-                </Text>
-                <Text style={[styles.studentStatusLabel, styles.overdueLabel]}>
-                  Overdue
-                </Text>
-              </View>
-              
-              <View style={styles.statusDivider} />
-              
-              <View style={styles.studentStatusItem}>
-                <Text style={[styles.studentStatusNumber, styles.upToDateNumber]}>
-                  {studentStatus.upToDate}
-                </Text>
-                <Text style={[styles.studentStatusLabel, styles.upToDateLabel]}>
-                  Up to date
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
+        
         {/* Summary Section */}
         <View style={styles.summarySection}>
           <View style={styles.summaryCard}>
