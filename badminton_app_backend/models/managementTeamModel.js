@@ -1,99 +1,85 @@
 // models/managementTeamModel.js
-const db = require("../config/db");
-const bcrypt = require("bcrypt");
+const db = require('../config/db');
 
-// Get all team members
-exports.getAll = (callback) => {
-  db.query(
-    "SELECT id, name, role, email, mobile, created_at FROM management_team ORDER BY id DESC",
-    callback
-  );
-};
-
-// Get member by ID
-exports.getById = (id, callback) => {
-  db.query(
-    "SELECT id, name, role, email, mobile, created_at FROM management_team WHERE id=?",
-    [id],
-    callback
-  );
-};
-
-// Create member with hashed password
-exports.create = (data, callback) => {
-  // Hash the password
-  bcrypt.hash(data.password, 10, (err, hashedPassword) => {
-    if (err) {
-      console.error('Hashing error:', err);
-      return callback(err);
-    }
-    
-    console.log('Creating member with hashed password');
-    db.query(
-      "INSERT INTO management_team (name, role, email, mobile, password) VALUES (?, ?, ?, ?, ?)",
-      [data.name, data.role, data.email, data.mobile, hashedPassword],
-      callback
-    );
-  });
-};
-
-// Update member - only update password if provided
-exports.update = (id, data, callback) => {
-  console.log('Update data received:', { ...data, password: data.password ? '***' : 'not provided' });
-  
-  // Check if password is provided and not empty
-  if (data.password && data.password.trim() !== '') {
-    console.log('Password provided, hashing...');
-    // Hash the new password
-    bcrypt.hash(data.password.trim(), 10, (err, hashedPassword) => {
+const Team = {
+  getAll: (callback) => {
+    const query = 'SELECT id, name, mobile, email, role, created_at FROM team_members ORDER BY created_at DESC';
+    console.log('Executing getAll query');
+    db.query(query, (err, results) => {
       if (err) {
-        console.error('Hashing error:', err);
-        return callback(err);
+        console.error('GetAll Error:', err);
+      } else {
+        console.log(`GetAll returned ${results.length} records`);
       }
-      
-      console.log('Password hashed successfully');
-      const sql = "UPDATE management_team SET name=?, role=?, email=?, mobile=?, password=? WHERE id=?";
-      db.query(
-        sql,
-        [data.name, data.role, data.email, data.mobile, hashedPassword, id],
-        (err, result) => {
-          if (err) {
-            console.error('Update error:', err);
-            return callback(err);
-          }
-          console.log('Update successful with password change');
-          callback(null, result);
-        }
-      );
+      callback(err, results);
     });
-  } else {
-    console.log('No password provided, updating without password');
-    // Update without changing password
-    const sql = "UPDATE management_team SET name=?, role=?, email=?, mobile=? WHERE id=?";
+  },
+
+  getById: (id, callback) => {
+    const query = 'SELECT id, name, mobile, email, role FROM team_members WHERE id = ?';
+    console.log(`Executing getById for ID: ${id}`);
+    db.query(query, [id], (err, results) => {
+      if (err) {
+        console.error('GetById Error:', err);
+      } else {
+        console.log(`GetById returned ${results.length} records`);
+      }
+      callback(err, results);
+    });
+  },
+
+  create: (data, callback) => {
+    const query = 'INSERT INTO team_members (name, mobile, email, password, role) VALUES (?, ?, ?, ?, ?)';
+    console.log('Executing create with data:', { ...data, password: '***' });
     db.query(
-      sql,
-      [data.name, data.role, data.email, data.mobile, id],
+      query,
+      [data.name, data.mobile, data.email, data.password, data.role],
       (err, result) => {
         if (err) {
-          console.error('Update error:', err);
-          return callback(err);
+          console.error('Create Error:', err);
+        } else {
+          console.log('Create successful, insertId:', result.insertId);
         }
-        console.log('Update successful without password change');
-        callback(null, result);
+        callback(err, result);
       }
     );
+  },
+
+  update: (id, data, callback) => {
+    let query = 'UPDATE team_members SET name = ?, mobile = ?, email = ?, role = ?';
+    const params = [data.name, data.mobile, data.email, data.role];
+    
+    if (data.password) {
+      query += ', password = ?';
+      params.push(data.password);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    console.log(`Executing update for ID: ${id}`);
+    db.query(query, params, (err, result) => {
+      if (err) {
+        console.error('Update Error:', err);
+      } else {
+        console.log(`Update affected ${result.affectedRows} rows`);
+      }
+      callback(err, result);
+    });
+  },
+
+  remove: (id, callback) => {
+    const query = 'DELETE FROM team_members WHERE id = ?';
+    console.log(`Executing remove for ID: ${id}`);
+    db.query(query, [id], (err, result) => {
+      if (err) {
+        console.error('Remove Error:', err);
+      } else {
+        console.log(`Remove affected ${result.affectedRows} rows`);
+      }
+      callback(err, result);
+    });
   }
 };
 
-// Delete member
-exports.remove = (id, callback) => {
-  console.log('Deleting member with ID:', id);
-  db.query("DELETE FROM management_team WHERE id=?", [id], (err, result) => {
-    if (err) {
-      console.error('Delete error:', err);
-      return callback(err);
-    }
-    console.log('Delete result:', result);
-    callback(null, result);
-  });
-};
+module.exports = Team;

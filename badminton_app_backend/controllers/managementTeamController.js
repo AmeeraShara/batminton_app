@@ -6,11 +6,17 @@ const SALT_ROUNDS = 10;
 
 // Get all members
 exports.getMembers = (req, res) => {
+  console.log('=== GET ALL MEMBERS REQUEST ===');
   Team.getAll((err, results) => {
     if (err) {
       console.error('Get all error:', err);
-      return res.status(500).json({ success: false, error: err });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Database Error",
+        error: err.message 
+      });
     }
+    console.log(`Sending ${results.length} members`);
     res.json(results);
   });
 };
@@ -18,10 +24,16 @@ exports.getMembers = (req, res) => {
 // Get single member
 exports.getMember = (req, res) => {
   const id = req.params.id;
+  console.log(`=== GET MEMBER REQUEST: ID ${id} ===`);
+  
   Team.getById(id, (err, results) => {
     if (err) {
       console.error('Get by id error:', err);
-      return res.status(500).json({ success: false, error: err });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Database Error",
+        error: err.message 
+      });
     }
     if (results.length === 0) {
       return res.status(404).json({
@@ -35,11 +47,11 @@ exports.getMember = (req, res) => {
 
 // Create member
 exports.createMember = async (req, res) => {
+  console.log('=== CREATE MEMBER REQUEST ===');
   try {
     const data = req.body;
     console.log('Create member request body:', { ...data, password: data.password ? '***' : 'not provided' });
     
-    // Validate required fields
     if (!data.name || !data.role || !data.email || !data.mobile || !data.password) {
       return res.status(400).json({
         success: false,
@@ -47,23 +59,43 @@ exports.createMember = async (req, res) => {
       });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
-    data.password = hashedPassword;
-
-    Team.create(data, (err, result) => {
+    // Check if email already exists
+    const checkEmailQuery = 'SELECT id FROM team_members WHERE email = ?';
+    db.query(checkEmailQuery, [data.email], async (err, results) => {
       if (err) {
-        console.error('Create error:', err);
+        console.error('Email check error:', err);
         return res.status(500).json({
           success: false,
           message: "Database Error",
-          error: err
+          error: err.message
         });
       }
-      res.json({
-        success: true,
-        message: "Team member added successfully",
-        insertId: result.insertId,
+      
+      if (results.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists"
+        });
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+      data.password = hashedPassword;
+
+      Team.create(data, (err, result) => {
+        if (err) {
+          console.error('Create error:', err);
+          return res.status(500).json({
+            success: false,
+            message: "Database Error",
+            error: err.message
+          });
+        }
+        res.json({
+          success: true,
+          message: "Team member added successfully",
+          insertId: result.insertId,
+        });
       });
     });
   } catch (error) {
@@ -78,6 +110,7 @@ exports.createMember = async (req, res) => {
 
 // Update member
 exports.updateMember = async (req, res) => {
+  console.log('=== UPDATE MEMBER REQUEST ===');
   try {
     const id = req.params.id;
     const data = req.body;
@@ -86,7 +119,6 @@ exports.updateMember = async (req, res) => {
     console.log('ID:', id);
     console.log('Data:', { ...data, password: data.password ? '***' : 'not provided' });
 
-    // Validate required fields
     if (!data.name || !data.role || !data.email || !data.mobile) {
       return res.status(400).json({
         success: false,
@@ -94,14 +126,13 @@ exports.updateMember = async (req, res) => {
       });
     }
 
-    // Check if member exists
     Team.getById(id, async (err, results) => {
       if (err) {
         console.error('Get by id error:', err);
         return res.status(500).json({
           success: false,
           message: "Database Error",
-          error: err
+          error: err.message
         });
       }
       if (results.length === 0) {
@@ -112,24 +143,30 @@ exports.updateMember = async (req, res) => {
       }
 
       // If password is provided, hash it
-      if (data.password) {
+      if (data.password && data.password.trim() !== '') {
         const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
         data.password = hashedPassword;
       } else {
-        // If no password provided, remove it from update data
         delete data.password;
       }
 
-      // Update the member
       Team.update(id, data, (err, result) => {
         if (err) {
           console.error('Update error:', err);
           return res.status(500).json({
             success: false,
             message: "Database Error",
-            error: err
+            error: err.message
           });
         }
+        
+        if (result.affectedRows === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "Member not found or no changes made"
+          });
+        }
+        
         console.log('Update successful');
         res.json({
           success: true,
@@ -149,9 +186,19 @@ exports.updateMember = async (req, res) => {
 
 // Delete member
 exports.deleteMember = (req, res) => {
+  console.log('=== DELETE MEMBER REQUEST ===');
   const id = req.params.id;
-  console.log('Deleting member with ID:', id);
+  console.log('Member ID to delete:', id);
   
+  // Validate ID
+  if (!id) {
+    console.error('No ID provided for deletion');
+    return res.status(400).json({
+      success: false,
+      message: "Member ID is required"
+    });
+  }
+
   // Check if member exists
   Team.getById(id, (err, results) => {
     if (err) {
@@ -159,27 +206,44 @@ exports.deleteMember = (req, res) => {
       return res.status(500).json({
         success: false,
         message: "Database Error",
-        error: err
+        error: err.message
       });
     }
+    
+    console.log(`GetById returned ${results.length} records`);
+    
     if (results.length === 0) {
+      console.log(`Member with ID ${id} not found`);
       return res.status(404).json({
         success: false,
         message: "Member not found"
       });
     }
 
+    console.log('Member found:', results[0]);
+
     // Delete the member
-    Team.remove(id, (err) => {
+    Team.remove(id, (err, result) => {
       if (err) {
         console.error('Delete error:', err);
         return res.status(500).json({
           success: false,
           message: "Database Error",
-          error: err
+          error: err.message
         });
       }
-      console.log('Delete successful for ID:', id);
+      
+      console.log('Delete result:', result);
+      console.log(`Delete affected ${result.affectedRows} rows`);
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Member not found or already deleted"
+        });
+      }
+      
+      console.log(`Delete successful for ID: ${id}`);
       res.json({
         success: true,
         message: "Team member deleted successfully",

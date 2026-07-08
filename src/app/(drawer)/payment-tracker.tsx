@@ -94,18 +94,14 @@ export default function PaymentTracker() {
     try {
       setLoading(true);
       setError("");
-      console.log("Fetching payments from:", API);
 
       const response = await fetch(API);
-      console.log("Response status:", response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Payments loaded:", data.length);
-      console.log("Sample payment data:", JSON.stringify(data[0], null, 2));
       setPayments(data);
       
       // If a student is selected, refresh their data
@@ -127,7 +123,6 @@ export default function PaymentTracker() {
   // Load all students
   const loadStudents = async () => {
     try {
-      console.log("Fetching students from:", STUDENTS_API);
       const response = await fetch(STUDENTS_API);
 
       if (!response.ok) {
@@ -135,9 +130,7 @@ export default function PaymentTracker() {
       }
 
       const data = await response.json();
-      console.log("Students loaded:", data.length);
-      console.log("Sample student data:", JSON.stringify(data[0], null, 2));
-      console.log("All students:", JSON.stringify(data, null, 2));
+
       setStudents(data);
     } catch (error) {
       console.log("Error loading students:", error);
@@ -180,7 +173,6 @@ export default function PaymentTracker() {
       const url = editId ? `${API}/${editId}` : API;
       const method = editId ? "PUT" : "POST";
 
-      console.log("Saving payment:", { url, method, body });
 
       const response = await fetch(url, {
         method: method,
@@ -193,7 +185,6 @@ export default function PaymentTracker() {
       }
 
       const result = await response.json();
-      console.log("Payment saved:", result);
 
       await loadPayments();
       
@@ -320,23 +311,16 @@ export default function PaymentTracker() {
         return String(s.id) === String(value);
       });
       
-      console.log("Found student:", student);
       
       if (student) {
         setStudentName(student.student_name || "");
         setSelectedStudent(student);
-        console.log("✅ Student selected successfully:", student.student_name);
-        console.log("Student ID for payments:", student.id);
         
         // Check if this student has payments
         const studentPayments = payments.filter(p => String(p.student_id) === String(student.id));
-        console.log("This student has", studentPayments.length, "payments");
         if (studentPayments.length > 0) {
-          console.log("First payment:", studentPayments[0]);
         }
       } else {
-        console.log("❌ No student found with ID:", value);
-        console.log("Available student IDs:", students.map(s => `${s.id} (${typeof s.id})`));
         setStudentName("");
         setSelectedStudent(null);
       }

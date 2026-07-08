@@ -24,14 +24,17 @@ interface TeamMember {
   created_at?: string;
 }
 
-interface ApiResponse {
-  success?: boolean;
-  message?: string;
-  insertId?: number;
-}
-
-// API URL
+// API URL - Change this based on your environment
 const getApiBaseUrl = () => {
+  // For Android emulator
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:5000/api/management-team';
+  }
+  // For iOS simulator
+  if (Platform.OS === 'ios') {
+    return 'http://localhost:5000/api/management-team';
+  }
+  // For physical device - use your computer's IP
   return 'http://192.168.100.169:5000/api/management-team';
 };
 
@@ -131,13 +134,11 @@ export default function Settings() {
       role: role,
     };
 
-    // IMPORTANT: Only include password if it's provided and not empty
-    // For editing, if password is empty, don't send it
+    // Only include password if it's provided and not empty
     if (password.trim()) {
       memberData.password = password.trim();
     }
 
-    console.log('Sending data:', { ...memberData, password: memberData.password ? '***' : 'not provided' });
 
     try {
       setLoading(true);
@@ -150,8 +151,7 @@ export default function Settings() {
         method = 'PUT';
       }
 
-      console.log('Saving to:', url);
-      console.log('Method:', method);
+
       
       const response = await fetch(url, {
         method: method,
@@ -162,14 +162,12 @@ export default function Settings() {
       });
 
       const responseText = await response.text();
-      console.log('Response status:', response.status);
-      console.log('Response body:', responseText);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}\n${responseText}`);
       }
 
-      const data: ApiResponse = JSON.parse(responseText);
+      const data = JSON.parse(responseText);
 
       Alert.alert('Success', data.message || 'Team member saved successfully');
       await fetchTeamMembers();
@@ -197,28 +195,37 @@ export default function Settings() {
             try {
               setLoading(true);
               const url = `${getApiBaseUrl()}/${id}`;
-              console.log('Deleting from:', url);
               
               const response = await fetch(url, {
                 method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
               });
               
-              const responseText = await response.text();
-              console.log('Delete response status:', response.status);
-              console.log('Delete response body:', responseText);
               
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}\n${responseText}`);
+              const responseText = await response.text();
+              
+              let data;
+              try {
+                data = JSON.parse(responseText);
+              } catch (parseError) {
+                console.error('Failed to parse response:', parseError);
+                throw new Error('Invalid response from server');
               }
               
-              const data: ApiResponse = JSON.parse(responseText);
+              if (!response.ok) {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
+              }
               
               Alert.alert('Success', data.message || 'Team member deleted successfully');
               await fetchTeamMembers();
             } catch (error) {
               console.error('Error deleting team member:', error);
-              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-              Alert.alert('Error', `Failed to delete team member.\n\n${errorMessage}`);
+              Alert.alert(
+                'Error', 
+                `Failed to delete team member.\n\n${error instanceof Error ? error.message : 'Unknown error'}`
+              );
             } finally {
               setLoading(false);
             }
@@ -229,7 +236,6 @@ export default function Settings() {
   };
 
   const handleEditMember = (member: TeamMember) => {
-    console.log('Editing member:', member);
     setEditId(member.id);
     setName(member.name);
     setMobile(member.mobile);
@@ -425,7 +431,7 @@ export default function Settings() {
 
               <Text style={styles.roleLabel}>Select Role</Text>
               <View style={styles.pickerWrap}>
-                {['Administrator', 'Operations', 'Member'].map((roleOption) => (
+                {['Administrator', 'Operations', 'Coach'].map((roleOption) => (
                   <TouchableOpacity
                     key={roleOption}
                     style={[

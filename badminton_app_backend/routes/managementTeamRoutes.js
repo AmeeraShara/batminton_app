@@ -1,7 +1,6 @@
+// routes/managementTeamRoutes.js
 const express = require("express");
-
 const router = express.Router();
-
 const managementTeamController = require("../controllers/managementTeamController");
 
 // Get all members
