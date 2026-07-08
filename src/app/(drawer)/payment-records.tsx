@@ -63,8 +63,8 @@ export default function PaymentRecords() {
   ];
 
   const monthShort = [
-    "Ja", "Fe", "Mar", "Ap", "Ma", "Jun",
-    "Jul", "Au", "Se", "Oc", "No", "De"
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ];
 
   // Get current month and year
@@ -88,8 +88,8 @@ export default function PaymentRecords() {
   const getMonthStatus = (studentId: number, monthIndex: number) => {
     const monthName = monthShort[monthIndex];
     
-    // Find payment for this student and month
-    const payment = payments.find(p => 
+    // Use filteredPayments for the calendar view
+    const payment = filteredPayments.find(p => 
       p.student_id === studentId && 
       p.payment_month?.toLowerCase().includes(monthName.toLowerCase())
     );
@@ -126,8 +126,11 @@ export default function PaymentRecords() {
 
   useEffect(() => {
     filterPayments();
+  }, [selectedMonth, selectedAgeGroup, payments]);
+
+  useEffect(() => {
     calculateStudentStatus();
-  }, [selectedMonth, selectedAgeGroup, payments, students]);
+  }, [filteredPayments]);
 
   const loadData = async () => {
     setLoading(true);
@@ -222,18 +225,19 @@ export default function PaymentRecords() {
   };
 
   const calculateStudentStatus = () => {
-    const studentIds = new Set(payments.map(p => p.student_id));
+    // Get student IDs from filtered payments
+    const filteredStudentIds = new Set(filteredPayments.map(p => p.student_id));
     const overdueStudents = new Set();
     const upToDateStudents = new Set();
     
-    // Check each student's payment status for past months
-    students.forEach(student => {
+    // Check each student that has payments in the filtered list
+    filteredStudentIds.forEach(studentId => {
       let hasOverdue = false;
       const current = getCurrentMonthYear();
       
       // Check all past months from Jan to last month
       for (let month = 0; month < current.month; month++) {
-        const status = getMonthStatus(student.id, month);
+        const status = getMonthStatus(studentId, month);
         if (status === 'OVERDUE') {
           hasOverdue = true;
           break;
@@ -241,14 +245,14 @@ export default function PaymentRecords() {
       }
       
       if (hasOverdue) {
-        overdueStudents.add(student.id);
-      } else if (studentIds.has(student.id)) {
-        upToDateStudents.add(student.id);
+        overdueStudents.add(studentId);
+      } else {
+        upToDateStudents.add(studentId);
       }
     });
     
     setStudentStatus({
-      total: studentIds.size,
+      total: filteredStudentIds.size,
       overdue: overdueStudents.size,
       upToDate: upToDateStudents.size
     });
@@ -360,7 +364,7 @@ export default function PaymentRecords() {
 
   // Get student payment summary with overdue calculation
   const getStudentPaymentSummary = (studentId: number) => {
-    const studentPayments = payments.filter(p => p.student_id === studentId);
+    const studentPayments = filteredPayments.filter(p => p.student_id === studentId);
     const totalPaid = studentPayments.reduce((sum, p) => {
       if (p.status?.toUpperCase() === 'PAID') {
         return sum + (parseFloat(p.amount) || 0);
@@ -390,8 +394,20 @@ export default function PaymentRecords() {
     return { totalPaid, overdueCount, paidCount, pendingCount, total };
   };
 
+  // Get filtered students based on current filters
+  const getFilteredStudents = () => {
+    if (selectedMonth || selectedAgeGroup) {
+      // Only show students that have payments in the filtered list
+      const studentIdsWithPayments = new Set(filteredPayments.map(p => p.student_id));
+      return students.filter(student => studentIdsWithPayments.has(student.id));
+    }
+    return students;
+  };
+
   // Generate Students HTML Table for PDF
   const generateStudentsHTML = () => {
+    const filteredStudents = getFilteredStudents();
+    
     let html = `
       <html>
         <head>
@@ -523,7 +539,7 @@ export default function PaymentRecords() {
           </div>
           
           <div class="summary">
-            <strong>Total Students:</strong> ${students.length} | 
+            <strong>Total Students:</strong> ${filteredStudents.length} | 
             <strong>With Overdue:</strong> ${studentStatus.overdue} | 
             <strong>Up to Date:</strong> ${studentStatus.upToDate}
           </div>
@@ -548,7 +564,7 @@ export default function PaymentRecords() {
             <tbody>
     `;
 
-    students.forEach((student, index) => {
+    filteredStudents.forEach((student, index) => {
       const ageGroup = ageGroups.find(g => g.id === student.age_group_id);
       const rowNum = index + 1;
       
@@ -742,7 +758,8 @@ export default function PaymentRecords() {
         htmlContent = generateTransactionsHTML();
         fileName = `Payment_Transactions_${new Date().toISOString().split('T')[0]}.html`;
       } else {
-        if (students.length === 0) {
+        const filteredStudents = getFilteredStudents();
+        if (filteredStudents.length === 0) {
           Alert.alert('No Data', 'There are no students to export.');
           setExporting(false);
           return;
@@ -849,7 +866,8 @@ export default function PaymentRecords() {
         
         fileName = `Payment_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
       } else {
-        if (students.length === 0) {
+        const filteredStudents = getFilteredStudents();
+        if (filteredStudents.length === 0) {
           Alert.alert('No Data', 'There are no students to export.');
           setExporting(false);
           return;
@@ -857,7 +875,7 @@ export default function PaymentRecords() {
         
         // Students CSV
         const headers = ['#', 'Reg. Number', 'Student Name', 'Age Group', ...monthShort];
-        const rows = students.map((student, index) => {
+        const rows = filteredStudents.map((student, index) => {
           const ageGroup = ageGroups.find(g => g.id === student.age_group_id);
           const row = [
             index + 1,
@@ -948,7 +966,7 @@ export default function PaymentRecords() {
           {formatDate(item.created_at || item.payment_date)}
         </Text>
         <Text style={[styles.tableCell, styles.cellMethod]} numberOfLines={1}>
-          <Ionicons size={12} color={methodInfo.color} /> {item.payment_method || 'N/A'}
+          <Ionicons size={12} color={methodInfo.color} name={methodInfo.icon as any} /> {item.payment_method || 'N/A'}
         </Text>
         <Text style={[styles.tableCell, styles.cellAmount]} numberOfLines={1}>
           Rs {amount.toFixed(2)}
@@ -967,7 +985,8 @@ export default function PaymentRecords() {
   const renderStudentItem = ({ item }: { item: any }) => {
     const summary = getStudentPaymentSummary(item.id);
     const ageGroup = ageGroups.find(g => g.id === item.age_group_id);
-    const studentNumber = students.indexOf(item) + 1;
+    const filteredStudents = getFilteredStudents();
+    const studentNumber = filteredStudents.indexOf(item) + 1;
     
     return (
       <View style={styles.studentCard}>
@@ -1026,6 +1045,8 @@ export default function PaymentRecords() {
       </SafeAreaView>
     );
   }
+
+  const filteredStudents = getFilteredStudents();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1129,6 +1150,39 @@ export default function PaymentRecords() {
           </View>
         </View>
 
+        {/* Student Status Section - Only show in Students tab */}
+        {activeTab === 'students' && (
+          <View style={styles.studentStatusSection}>
+            <View style={styles.studentStatusContainer}>
+              <View style={styles.studentStatusItem}>
+                <Text style={styles.studentStatusNumber}>{studentStatus.total}</Text>
+                <Text style={styles.studentStatusLabel}>Students Displayed</Text>
+              </View>
+              
+              <View style={styles.statusDivider} />
+              
+              <View style={styles.studentStatusItem}>
+                <Text style={[styles.studentStatusNumber, styles.overdueNumber]}>
+                  {studentStatus.overdue}
+                </Text>
+                <Text style={[styles.studentStatusLabel, styles.overdueLabel]}>
+                  Overdue
+                </Text>
+              </View>
+              
+              <View style={styles.statusDivider} />
+              
+              <View style={styles.studentStatusItem}>
+                <Text style={[styles.studentStatusNumber, styles.upToDateNumber]}>
+                  {studentStatus.upToDate}
+                </Text>
+                <Text style={[styles.studentStatusLabel, styles.upToDateLabel]}>
+                  Up to date
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Summary Section */}
         <View style={styles.summarySection}>
@@ -1144,7 +1198,7 @@ export default function PaymentRecords() {
                 <Text style={styles.summaryCount}>
                   {activeTab === 'transactions' 
                     ? `${filteredPayments.length} matching record${filteredPayments.length !== 1 ? 's' : ''}`
-                    : `${students.length} student${students.length !== 1 ? 's' : ''}`
+                    : `${filteredStudents.length} student${filteredStudents.length !== 1 ? 's' : ''}`
                   }
                 </Text>
               </View>
@@ -1152,7 +1206,7 @@ export default function PaymentRecords() {
                 <TouchableOpacity 
                   style={[styles.exportBtn, styles.exportBtnPDF]} 
                   onPress={downloadPDF}
-                  disabled={exporting || (activeTab === 'transactions' ? filteredPayments.length === 0 : students.length === 0)}
+                  disabled={exporting || (activeTab === 'transactions' ? filteredPayments.length === 0 : filteredStudents.length === 0)}
                 >
                   {exporting ? (
                     <ActivityIndicator size="small" color="#2563EB" />
@@ -1166,7 +1220,7 @@ export default function PaymentRecords() {
                 <TouchableOpacity 
                   style={[styles.exportBtn, styles.exportBtnExcel]} 
                   onPress={downloadExcel}
-                  disabled={exporting || (activeTab === 'transactions' ? filteredPayments.length === 0 : students.length === 0)}
+                  disabled={exporting || (activeTab === 'transactions' ? filteredPayments.length === 0 : filteredStudents.length === 0)}
                 >
                   {exporting ? (
                     <ActivityIndicator size="small" color="#2563EB" />
@@ -1237,9 +1291,9 @@ export default function PaymentRecords() {
             </View>
 
             {/* Students List */}
-            {students.length > 0 ? (
+            {filteredStudents.length > 0 ? (
               <FlatList
-                data={students}
+                data={filteredStudents}
                 keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
                 scrollEnabled={false}
                 renderItem={renderStudentItem}
@@ -1249,6 +1303,9 @@ export default function PaymentRecords() {
               <View style={styles.emptyState}>
                 <Ionicons name="people-outline" size={48} color="#D1D5DB" />
                 <Text style={styles.emptyStateText}>No students found</Text>
+                <Text style={styles.emptyStateSub}>
+                  Try adjusting your filters to see more results.
+                </Text>
               </View>
             )}
           </View>
