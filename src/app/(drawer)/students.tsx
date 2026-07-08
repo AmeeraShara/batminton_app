@@ -16,12 +16,25 @@ import {
 export default function Students() {
   const API = "http://192.168.100.169:5000/api/students";
   const AGE_API = "http://192.168.100.169:5000/api/agegroups";
+  const ATTENDANCE_API = "http://192.168.100.169:5000/api/attendance";
+  const PAYMENTS_API = "http://192.168.100.169:5000/api/payments";
+  const SESSIONS_API = "http://192.168.100.169:5000/api/sessions";
 
   const [students, setStudents] = useState<any[]>([]);
   const [ageGroups, setAgeGroups] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("information");
+  const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [historyMonth, setHistoryMonth] = useState(new Date().getMonth());
+  const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
 
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [studentName, setStudentName] = useState("");
@@ -31,9 +44,22 @@ export default function Students() {
   const [email, setEmail] = useState("");
   const [ageGroupId, setAgeGroupId] = useState("");
 
+  const monthNames = [
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+  ];
+  
+  const fullMonthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
   useEffect(() => {
     loadStudents();
     loadAgeGroups();
+    loadSessions();
   }, []);
 
   const loadStudents = async () => {
@@ -51,6 +77,16 @@ export default function Students() {
       const response = await fetch(AGE_API);
       const data = await response.json();
       setAgeGroups(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const loadSessions = async () => {
+    try {
+      const response = await fetch(SESSIONS_API);
+      const data = await response.json();
+      setSessions(data);
     } catch (error) {
       console.log(error);
     }
@@ -110,11 +146,191 @@ export default function Students() {
     }
   };
 
+  const viewStudent = async (student: any) => {
+    setSelectedStudent(student);
+    setViewModal(true);
+    setActiveTab("information");
+    await loadAttendanceHistory(student.id);
+    await loadPaymentHistory(student.id);
+  };
+
+  const loadAttendanceHistory = async (studentId: number) => {
+    setLoadingAttendance(true);
+    try {
+      const response = await fetch(`${ATTENDANCE_API}/student/${studentId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceHistory(data || []);
+      } else {
+        setAttendanceHistory([]);
+      }
+    } catch (error) {
+      console.log("Error loading attendance:", error);
+      setAttendanceHistory([]);
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
+
+  const loadPaymentHistory = async (studentId: number) => {
+    setLoadingPayments(true);
+    try {
+      const response = await fetch(PAYMENTS_API);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter payments for this specific student
+        const studentPayments = data.filter((p: any) => {
+          // Try different possible field names for student ID
+          return p.student_id === studentId || 
+                 p.studentId === studentId || 
+                 p.student === studentId;
+        });
+        console.log('Student payments found:', studentPayments.length);
+        setPaymentHistory(studentPayments || []);
+      } else {
+        setPaymentHistory([]);
+      }
+    } catch (error) {
+      console.log("Error loading payments:", error);
+      setPaymentHistory([]);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  const getAgeGroupName = (groupId: string) => {
+    const group = ageGroups.find(g => g.id === groupId);
+    return group ? group.age_group_name : "N/A";
+  };
+
+  const getAttendanceStatus = (day: number, month: number, year: number) => {
+    if (!selectedStudent || !attendanceHistory || attendanceHistory.length === 0)
+      return null;
+
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+    const record = attendanceHistory.find((h) => {
+      if (!h.attendance_date) return false;
+      const recordDate = new Date(h.attendance_date);
+      const recordDateStr = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, "0")}-${String(recordDate.getDate()).padStart(2, "0")}`;
+      return recordDateStr === dateStr;
+    });
+
+    if (record) {
+      return record.status || null;
+    }
+    return null;
+  };
+
+  const getAttendanceStats = () => {
+    if (!attendanceHistory || attendanceHistory.length === 0) {
+      return { present: 0, absent: 0, total: 0, percentage: 0 };
+    }
+
+    const present = attendanceHistory.filter(
+      (h) => h.status === "Present",
+    ).length;
+    const absent = attendanceHistory.filter(
+      (h) => h.status === "Absent",
+    ).length;
+    const total = attendanceHistory.length;
+    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+    return { present, absent, total, percentage };
+  };
+
+  const getMonthlyStats = (month: number, year: number) => {
+    if (!attendanceHistory || attendanceHistory.length === 0) {
+      return { present: 0, absent: 0, total: 0 };
+    }
+
+    const monthRecords = attendanceHistory.filter((h) => {
+      const date = h.attendance_date ? new Date(h.attendance_date) : null;
+      if (!date) return false;
+      return date.getMonth() === month && date.getFullYear() === year;
+    });
+
+    const present = monthRecords.filter((h) => h.status === "Present").length;
+    const absent = monthRecords.filter((h) => h.status === "Absent").length;
+    const total = monthRecords.length;
+
+    return { present, absent, total };
+  };
+
+  const getPaymentStats = () => {
+    if (!paymentHistory || paymentHistory.length === 0) {
+      return { totalPaid: 0, outstanding: 0, totalRecords: 0 };
+    }
+
+    // Calculate total paid - sum of all payments regardless of status
+    const totalPaid = paymentHistory.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+    // Calculate outstanding - sum of payments that are not PAID
+    const outstanding = paymentHistory
+      .filter(p => p.status?.toUpperCase() !== 'PAID')
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+    const totalRecords = paymentHistory.length;
+
+    return { totalPaid, outstanding, totalRecords };
+  };
+
+  const getCalendarWeeks = (month: number, year: number) => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay();
+
+    const weeks = [];
+    let currentWeek = [];
+
+    for (let i = 0; i < startDayOfWeek; i++) {
+      currentWeek.push(null);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      currentWeek.push(day);
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) {
+        currentWeek.push(null);
+      }
+      weeks.push(currentWeek);
+    }
+
+    return weeks;
+  };
+
+  const changeHistoryMonth = (increment: number) => {
+    let newMonth = historyMonth + increment;
+    let newYear = historyYear;
+
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
+    }
+
+    setHistoryMonth(newMonth);
+    setHistoryYear(newYear);
+  };
+
   const filteredStudents = students.filter(
     (item) =>
       item.student_name?.toLowerCase().includes(search.toLowerCase()) ||
       item.registration_number?.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const stats = getAttendanceStats();
+  const paymentStats = getPaymentStats();
+  const monthStats = getMonthlyStats(historyMonth, historyYear);
 
   return (
     <View style={styles.container}>
@@ -149,7 +365,6 @@ export default function Students() {
 
       {/* TABLE */}
       <View style={styles.tableContainer}>
-        {/* HEADER */}
         <ScrollView horizontal showsHorizontalScrollIndicator>
           <View>
             <View style={styles.tableHeader}>
@@ -158,10 +373,9 @@ export default function Students() {
               <Text style={[styles.headerCell, { width: 80 }]}>Age</Text>
               <Text style={[styles.headerCell, { width: 140 }]}>Contact</Text>
               <Text style={[styles.headerCell, { width: 200 }]}>Email</Text>
-              <Text style={[styles.headerCell, { width: 100 }]}>Action</Text>
+              <Text style={[styles.headerCell, { width: 130 }]}>Action</Text>
             </View>
 
-            {/* BODY */}
             <FlatList
               data={filteredStudents}
               keyExtractor={(item) => item.id.toString()}
@@ -185,8 +399,13 @@ export default function Students() {
                     {item.email}
                   </Text>
 
-                  <View style={[styles.actionRow, { width: 100 }]}>
+                  <View style={[styles.actionRow, { width: 130 }]}>
+                    <TouchableOpacity onPress={() => viewStudent(item)}>
+                      <Ionicons name="eye-outline" size={20} color="#2563EB" />
+                    </TouchableOpacity>
+
                     <TouchableOpacity
+                      style={{ marginLeft: 12 }}
                       onPress={() => {
                         setEditId(item.id);
                         setRegistrationNumber(item.registration_number);
@@ -199,22 +418,14 @@ export default function Students() {
                         setModal(true);
                       }}
                     >
-                      <Ionicons
-                        name="create-outline"
-                        size={20}
-                        color="#2563EB"
-                      />
+                      <Ionicons name="create-outline" size={20} color="#2563EB" />
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={{ marginLeft: 12 }}
                       onPress={() => removeStudent(item.id)}
                     >
-                      <Ionicons
-                        name="trash-outline"
-                        size={20}
-                        color="#EF4444"
-                      />
+                      <Ionicons name="trash-outline" size={20} color="#EF4444" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -224,7 +435,7 @@ export default function Students() {
         </ScrollView>
       </View>
 
-      {/* MODAL */}
+      {/* ADD/EDIT MODAL */}
       <Modal visible={modal} transparent animationType="fade">
         <View style={styles.overlay}>
           <ScrollView>
@@ -276,7 +487,6 @@ export default function Students() {
                 onChangeText={setEmail}
               />
 
-              {/* Age Group - Styled consistently with other inputs */}
               <View style={styles.ageGroupContainer}>
                 <Picker
                   selectedValue={ageGroupId}
@@ -308,6 +518,365 @@ export default function Students() {
               >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* VIEW STUDENT MODAL */}
+      <Modal visible={viewModal} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <ScrollView>
+            <View style={styles.viewModal}>
+              {/* Header */}
+              <View style={styles.viewHeader}>
+                <View>
+                  <Text style={styles.viewName}>{selectedStudent?.student_name}</Text>
+                  <Text style={styles.viewReg}>
+                    {selectedStudent?.registration_number} · {getAgeGroupName(selectedStudent?.age_group_id)}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setViewModal(false)}>
+                  <Ionicons name="close" size={28} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Tabs */}
+              <View style={styles.tabContainer}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "information" && styles.activeTab]}
+                  onPress={() => setActiveTab("information")}
+                >
+                  <Text style={[styles.tabText, activeTab === "information" && styles.activeTabText]}>
+                    Information
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "attendance" && styles.activeTab]}
+                  onPress={() => setActiveTab("attendance")}
+                >
+                  <Text style={[styles.tabText, activeTab === "attendance" && styles.activeTabText]}>
+                    Attendance
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "payments" && styles.activeTab]}
+                  onPress={() => setActiveTab("payments")}
+                >
+                  <Text style={[styles.tabText, activeTab === "payments" && styles.activeTabText]}>
+                    Payments
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Content */}
+              {activeTab === "information" && selectedStudent && (
+                <View style={styles.viewContent}>
+                  <View style={styles.infoSection}>
+                    <Text style={styles.sectionTitle}>Student Profile</Text>
+                    
+                    <View style={styles.infoGrid}>
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>FULL NAME</Text>
+                        <Text style={styles.infoValue}>{selectedStudent.student_name}</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>AGE</Text>
+                        <Text style={styles.infoValue}>{selectedStudent.age} years</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>CONTACT NUMBER</Text>
+                        <Text style={styles.infoValue}>{selectedStudent.contact_number}</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>EMAIL ADDRESS</Text>
+                        <Text style={styles.infoValue}>{selectedStudent.email}</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>REGISTRATION NUMBER</Text>
+                        <Text style={styles.infoValue}>{selectedStudent.registration_number}</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>AGE GROUP</Text>
+                        <Text style={styles.infoValue}>{getAgeGroupName(selectedStudent.age_group_id)}</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>PARENT CONTACT</Text>
+                        <Text style={styles.infoValue}>{selectedStudent.parent_contact}</Text>
+                      </View>
+
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>REGISTERED ON</Text>
+                        <Text style={styles.infoValue}>
+                          {selectedStudent.created_at 
+                            ? new Date(selectedStudent.created_at).toLocaleDateString() 
+                            : "N/A"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {activeTab === "attendance" && (
+                <View style={styles.viewContent}>
+                  <Text style={styles.sectionTitle}>Attendance History</Text>
+                  
+                  {/* Attendance Stats Summary */}
+                  <View style={styles.attendanceSummary}>
+                    <View style={styles.summaryRow}>
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryNumber}>{stats.total}</Text>
+                        <Text style={styles.summaryLabel}>Total Records</Text>
+                      </View>
+                      <View style={styles.summaryDivider} />
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryNumber}>{stats.present}</Text>
+                        <Text style={styles.summaryLabel}>Sessions Attended</Text>
+                      </View>
+                      <View style={styles.summaryDivider} />
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryNumber}>{stats.percentage}%</Text>
+                        <Text style={styles.summaryLabel}>Attendance Rate</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Month Selector */}
+                  <View style={styles.historyNavigation}>
+                    <TouchableOpacity
+                      onPress={() => changeHistoryMonth(-1)}
+                      style={styles.historyNavButton}
+                    >
+                      <Ionicons name="chevron-back" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+
+                    <View style={styles.historyMonthInfo}>
+                      <Text style={styles.historyMonthText}>
+                        {fullMonthNames[historyMonth]} {historyYear}
+                      </Text>
+                      <View style={styles.historyMonthStats}>
+                        <View style={styles.historyStatItem}>
+                          <View style={[styles.historyStatDot, styles.historyStatPresent]} />
+                          <Text style={styles.historyStatText}>
+                            {monthStats.present} present
+                          </Text>
+                        </View>
+                        <View style={styles.historyStatItem}>
+                          <View style={[styles.historyStatDot, styles.historyStatAbsent]} />
+                          <Text style={styles.historyStatText}>
+                            {monthStats.absent} absent
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => changeHistoryMonth(1)}
+                      style={styles.historyNavButton}
+                    >
+                      <Ionicons name="chevron-forward" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Calendar */}
+                  <View style={styles.historyCalendarContainer}>
+                    <View style={styles.weekDaysRow}>
+                      {weekDays.map((day) => (
+                        <Text key={day} style={styles.historyWeekDayText}>
+                          {day}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.calendarGrid}>
+                      {getCalendarWeeks(historyMonth, historyYear).map(
+                        (week, weekIndex) => (
+                          <View key={weekIndex} style={styles.calendarWeek}>
+                            {week.map((day, dayIndex) => {
+                              const status = day
+                                ? getAttendanceStatus(
+                                    day,
+                                    historyMonth,
+                                    historyYear,
+                                  )
+                                : null;
+                              const isToday =
+                                day === new Date().getDate() &&
+                                historyMonth === new Date().getMonth() &&
+                                historyYear === new Date().getFullYear();
+
+                              const dateObj = day
+                                ? new Date(historyYear, historyMonth, day)
+                                : null;
+                              const dayOfWeek = dateObj
+                                ? dateObj.toLocaleDateString("en-US", {
+                                    weekday: "long",
+                                  })
+                                : null;
+                              const hasSession = dayOfWeek
+                                ? sessions.some(
+                                    (s) => s.day_of_week === dayOfWeek,
+                                  )
+                                : false;
+
+                              return (
+                                <View
+                                  key={dayIndex}
+                                  style={[
+                                    styles.historyDay,
+                                    day === null && styles.calendarDayEmpty,
+                                    status === "Present" &&
+                                      styles.historyDayPresent,
+                                    status === "Absent" &&
+                                      styles.historyDayAbsent,
+                                    isToday && !status && styles.historyDayToday,
+                                    hasSession &&
+                                      !status &&
+                                      styles.historyDaySession,
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.historyDayText,
+                                      day === null &&
+                                        styles.calendarDayTextEmpty,
+                                      status === "Present" &&
+                                        styles.historyDayTextPresent,
+                                      status === "Absent" &&
+                                        styles.historyDayTextAbsent,
+                                      isToday &&
+                                        !status &&
+                                        styles.historyDayTextToday,
+                                      hasSession &&
+                                        !status &&
+                                        styles.historyDayTextSession,
+                                    ]}
+                                  >
+                                    {day || ""}
+                                  </Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        ),
+                      )}
+                    </View>
+
+                    {/* Legend */}
+                    <View style={styles.legendContainer}>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.legendDotPresent]} />
+                        <Text style={styles.legendText}>Present</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.legendDotAbsent]} />
+                        <Text style={styles.legendText}>Absent</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.legendDotSession]} />
+                        <Text style={styles.legendText}>Session Day</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.legendDotToday]} />
+                        <Text style={styles.legendText}>Today</Text>
+                      </View>
+                    </View>
+
+                    {/* Overall Attendance */}
+                    <View style={styles.overallAttendance}>
+                      <View style={styles.attendanceRow}>
+                        <Text style={styles.attendanceLabel}>
+                          {stats.present} days present
+                        </Text>
+                        <Text style={styles.attendanceLabel}>
+                          {stats.absent} days absent
+                        </Text>
+                      </View>
+                      <View style={styles.attendanceBarContainer}>
+                        <Text style={styles.attendancePercentage}>
+                          Overall Attendance: {stats.percentage}%
+                        </Text>
+                        <View style={styles.progressBar}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              { width: `${stats.percentage}%` },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {activeTab === "payments" && (
+                <View style={styles.viewContent}>
+                  <Text style={styles.sectionTitle}>Payment Summary</Text>
+                  
+                  {/* Payment Stats */}
+                  <View style={styles.paymentSummary}>
+                    <View style={styles.paymentStatCard}>
+                      <Text style={styles.paymentStatLabel}>Total Paid</Text>
+                      <Text style={styles.paymentStatValue}>
+                        Rs {(paymentStats.totalPaid || 0).toFixed(2)}
+                      </Text>
+                    </View>
+
+                  </View>
+
+                  {/* Transaction History */}
+                  <Text style={styles.sectionTitle}>Transaction History</Text>
+                  {paymentHistory && paymentHistory.length > 0 ? (
+                    <View style={styles.transactionList}>
+                      {paymentHistory.map((payment, index) => (
+                        <View key={index} style={styles.transactionItem}>
+                          <View style={styles.transactionInfo}>
+                            <Text style={styles.transactionMonth}>
+                              {payment.payment_month || payment.month || 'N/A'}
+                            </Text>
+                            <Text style={styles.transactionDate}>
+                              {payment.payment_date || payment.date || 'N/A'}
+                            </Text>
+                          </View>
+                          <View style={styles.transactionDetails}>
+                            <Text style={styles.transactionAmount}>
+                              Rs {parseFloat(payment.amount || 0).toFixed(2)}
+                            </Text>
+                            <View style={[
+                              styles.transactionStatus,
+                              payment.status?.toUpperCase() === 'PAID' 
+                                ? styles.statusPaid 
+                                : styles.statusPending
+                            ]}>
+                              <Text style={[
+                                styles.transactionStatusText,
+                                payment.status?.toUpperCase() === 'PAID' 
+                                  ? styles.statusPaidText 
+                                  : styles.statusPendingText
+                              ]}>
+                                {payment.status || 'PAID'}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="cash-outline" size={48} color="#CBD5E1" />
+                      <Text style={styles.emptyText}>No payment records found</Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
           </ScrollView>
         </View>
