@@ -3,657 +3,563 @@ import { StyleSheet } from "react-native";
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 20,
+    backgroundColor: "#F8FAFC",
+    padding: 20,
   },
-
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
-
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "700",
+    color: "#0F172A",
   },
-
   sub: {
+    fontSize: 14,
     color: "#64748B",
-    marginTop: 4,
+    marginTop: 2,
   },
-
-  search: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-
   addBtn: {
-    backgroundColor: "#2563EB",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    backgroundColor: "#2563EB",
     paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 6,
   },
-
   addTxt: {
-    color: "#fff",
-    marginLeft: 5,
+    color: "#FFFFFF",
     fontWeight: "600",
+    fontSize: 14,
   },
-
+  search: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    fontSize: 14,
+    marginBottom: 16,
+  },
   tableContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     flex: 1,
   },
-
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#F8FAFC",
-    padding: 15,
+    backgroundColor: "#F1F5F9",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
   },
-
   headerCell: {
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "600",
     color: "#475569",
+    textTransform: "uppercase",
   },
-
   tableRow: {
     flexDirection: "row",
-    padding: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
+    alignItems: "center",
   },
-
   cell: {
-    color: "#111827",
+    fontSize: 14,
+    color: "#1E293B",
   },
-
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(15, 23, 42, 0.5)",
     justifyContent: "center",
-  },
-
-  modal: {
-    backgroundColor: "#fff",
-    margin: 20,
-    borderRadius: 20,
     padding: 20,
   },
-
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 15,
+  modal: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    marginVertical: 20,
   },
-
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 20,
+  },
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    marginBottom: 14,
+    backgroundColor: "#F8FAFC",
   },
-
   ageGroupContainer: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: "hidden",
-    backgroundColor: "#fff",
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    marginBottom: 14,
+    backgroundColor: "#F8FAFC",
   },
-
   picker: {
     height: 50,
-    width: "100%",
-    backgroundColor: "transparent",
+    color: "#1E293B",
   },
-
   save: {
     backgroundColor: "#2563EB",
-    padding: 15,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: "center",
-    marginTop: 5,
+    marginBottom: 10,
   },
-
   saveText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-
-  cancelBtn: {
-    padding: 15,
-    alignItems: "center",
-  },
-
-  cancelText: {
-    color: "#64748B",
+    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 16,
   },
-
-  viewModal: {
-    backgroundColor: "#fff",
-    margin: 20,
-    borderRadius: 20,
-    padding: 20,
-    maxHeight: "90%",
+  cancelBtn: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-
+  cancelText: {
+    color: "#64748B",
+    fontSize: 16,
+  },
+  viewModal: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginVertical: 20,
+  },
   viewHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-
   viewName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: "#0F172A",
   },
-
   viewReg: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#64748B",
     marginTop: 4,
   },
-
   tabContainer: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 10,
+    padding: 4,
     marginBottom: 20,
   },
-
   tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 8,
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 8,
   },
-
   activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#2563EB",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-
   tabText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#64748B",
+    color: "#94A3B8",
   },
-
   activeTabText: {
     color: "#2563EB",
     fontWeight: "600",
   },
-
   viewContent: {
-    marginTop: 5,
+    paddingTop: 4,
   },
-
-  infoSection: {
-    marginBottom: 20,
-  },
-
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: "#0F172A",
     marginBottom: 16,
   },
-
-  infoGrid: {
+  infoSection: {
     backgroundColor: "#F8FAFC",
     borderRadius: 12,
     padding: 16,
   },
-
-  infoItem: {
-    marginBottom: 16,
+  infoGrid: {
+    gap: 16,
   },
-
+  infoItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingBottom: 12,
+  },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#64748B",
+    color: "#94A3B8",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-
   infoValue: {
-    fontSize: 16,
-    color: "#111827",
-    fontWeight: "500",
+    fontSize: 14,
+    color: "#1E293B",
   },
-
+  attendanceHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  navigationButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#F0F7FF",
+  },
+  yearText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0F172A",
+    minWidth: 60,
+    textAlign: "center",
+  },
   attendanceSummary: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
-
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
   },
-
   summaryItem: {
-    alignItems: 'center',
-    flex: 1,
+    alignItems: "center",
   },
-
   summaryNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#0F172A",
   },
-
   summaryLabel: {
     fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    color: "#64748B",
+    marginTop: 4,
   },
-
   summaryDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: '#E5E7EB',
+    height: 40,
+    backgroundColor: "#E2E8F0",
   },
-
-  historyNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-
-  historyNavButton: {
-    padding: 8,
-  },
-
-  historyMonthInfo: {
-    alignItems: 'center',
-  },
-
-  historyMonthText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  historyMonthStats: {
-    flexDirection: 'row',
-    marginTop: 4,
-    gap: 12,
-  },
-
-  historyStatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  historyStatDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
-  },
-
-  historyStatPresent: {
-    backgroundColor: '#10B981',
-  },
-
-  historyStatAbsent: {
-    backgroundColor: '#EF4444',
-  },
-
-  historyStatText: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-
-  // Monthly Calendar Styles
-  monthlyCalendarContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 16,
-  },
-
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-
-  calendarMonthTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  weekDaysRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  horizontalScrollView: {
+    flexGrow: 0,
     marginBottom: 8,
   },
-
-  calendarWeekDayText: {
+  horizontalMonthContainer: {
+    flexDirection: "row",
+    gap: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  monthColumn: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    minWidth: 80,
+  },
+  monthColumnHeader: {
+    alignItems: "center",
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  monthColumnTitle: {
     fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '500',
-    width: 32,
-    textAlign: 'center',
-  },
-
-  calendarGrid: {
-    marginBottom: 12,
-  },
-
-  calendarWeek: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 4,
   },
-
-  calendarDay: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 6,
+  monthColumnStats: {
+    flexDirection: "row",
+    gap: 8,
   },
-
-  calendarDaySession: {
-    backgroundColor: '#F3F4F6',
+  monthColumnStatText: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#64748B",
   },
-
-  calendarDayPresent: {
-    backgroundColor: '#D1FAE5',
+  dayOfWeekHeaders: {
+    flexDirection: "row",
+    marginBottom: 4,
+    justifyContent: "flex-start",
+  },
+  dayOfWeekHeaderCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 4,
+    minWidth: 28,
+  },
+  dayOfWeekHeaderText: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: "#94A3B8",
+    textAlign: "center",
+  },
+  sessionDaysColumn: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+  },
+  sessionDayCell: {
+    flex: 1,
+    alignItems: "center",
+    gap: 3,
+    paddingVertical: 2,
+    minWidth: 28,
+  },
+  sessionDayNumber: {
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 4,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: "#E2E8F0",
+    marginVertical: 1,
   },
-
-  calendarDayAbsent: {
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#EF4444',
+  sessionDayNumberPresent: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#86EFAC",
   },
-
-  calendarDayToday: {
-    backgroundColor: '#EFF6FF',
+  sessionDayNumberAbsent: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#FCA5A5",
+  },
+  sessionDayNumberToday: {
+    backgroundColor: "#DBEAFE",
     borderWidth: 2,
-    borderColor: '#2563EB',
+    borderColor: "#3B82F6",
   },
-
-  calendarDayText: {
-    fontSize: 12,
-    color: '#111827',
+  sessionDayNumberText: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#1E293B",
   },
-
-  calendarDayTextSession: {
-    color: '#6B7280',
+  sessionDayNumberTextPresent: {
+    color: "#166534",
   },
-
-  calendarDayTextPresent: {
-    color: '#065F46',
-    fontWeight: '600',
+  sessionDayNumberTextAbsent: {
+    color: "#991B1B",
   },
-
-  calendarDayTextAbsent: {
-    color: '#991B1B',
-    fontWeight: '600',
+  sessionDayNumberTextToday: {
+    color: "#1D4ED8",
+    fontWeight: "500",
   },
-
-  calendarDayTextToday: {
-    color: '#2563EB',
-    fontWeight: '700',
-  },
-
-  calendarDayEmpty: {
-    width: 32,
-    height: 32,
-  },
-
   legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     gap: 12,
-    paddingTop: 8,
+    paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: "#F1F5F9",
+    marginTop: 8,
   },
-
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-
   legendDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginRight: 6,
   },
-
   legendDotPresent: {
-    backgroundColor: '#10B981',
+    backgroundColor: "#86EFAC",
   },
-
   legendDotAbsent: {
-    backgroundColor: '#EF4444',
+    backgroundColor: "#FCA5A5",
   },
-
   legendDotSession: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#E2E8F0",
   },
-
   legendDotToday: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#DBEAFE",
     borderWidth: 2,
-    borderColor: '#2563EB',
+    borderColor: "#3B82F6",
   },
-
   legendText: {
     fontSize: 12,
-    color: '#64748B',
+    color: "#64748B",
   },
-
   overallAttendance: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: "#F1F5F9",
   },
-
   attendanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
-
   attendanceLabel: {
     fontSize: 14,
-    color: '#374151',
+    color: "#1E293B",
+    fontWeight: "500",
   },
-
   attendanceBarContainer: {
     marginTop: 4,
   },
-
   attendancePercentage: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
+    fontWeight: "600",
+    color: "#0F172A",
+    marginBottom: 8,
   },
-
   progressBar: {
     height: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: "#E2E8F0",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-
   progressFill: {
-    height: '100%',
-    backgroundColor: '#2563EB',
+    height: "100%",
+    backgroundColor: "#2563EB",
     borderRadius: 4,
   },
-
   paymentSummary: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
   },
-
   paymentStatCard: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
-
   paymentStatLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: "#94A3B8",
+    fontWeight: "500",
+    textTransform: "uppercase",
     marginBottom: 4,
   },
-
   paymentStatValue: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#0F172A",
   },
-
   outstandingValue: {
-    color: '#EF4444',
+    color: "#EF4444",
   },
-
   transactionList: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
+    gap: 8,
   },
-
   transactionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-
   transactionInfo: {
     flex: 1,
   },
-
   transactionMonth: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#0F172A",
   },
-
   transactionDate: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: "#94A3B8",
     marginTop: 2,
   },
-
   transactionDetails: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
-
   transactionAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0F172A",
   },
-
   transactionStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 2,
-  },
-
-  statusPaid: {
-    backgroundColor: '#D1FAE5',
-  },
-
-  statusPending: {
-    backgroundColor: '#FEF3C7',
-  },
-
-  transactionStatusText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-
-  statusPaidText: {
-    color: '#065F46',
-  },
-
-  statusPendingText: {
-    color: '#92400E',
-  },
-
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
+    marginTop: 4,
   },
-
+  statusPaid: {
+    backgroundColor: "#DCFCE7",
+  },
+  statusPending: {
+    backgroundColor: "#FEF3C7",
+  },
+  transactionStatusText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  statusPaidText: {
+    color: "#166534",
+  },
+  statusPendingText: {
+    color: "#92400E",
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
   emptyText: {
-    color: '#94A3B8',
+    fontSize: 14,
+    color: "#94A3B8",
     marginTop: 12,
-    fontSize: 16,
   },
-  // Add these styles to your existing styles object
-noSessionDays: {
-  padding: 30,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#F8FAFC',
-  borderRadius: 8,
-  marginVertical: 10,
-},
-noSessionText: {
-  fontSize: 16,
-  color: '#94A3B8',
-  textAlign: 'center',
-  fontWeight: '500',
-},
 });

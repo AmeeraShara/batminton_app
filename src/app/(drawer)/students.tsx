@@ -26,15 +26,14 @@ export default function Students() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
-  const [editId, setEditId] = useState(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("information");
+  const [activeTab, setActiveTab] = useState("attendance");
   const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
-  const [historyMonth, setHistoryMonth] = useState(new Date().getMonth());
-  const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
+  const [startYear, setStartYear] = useState(2026);
 
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [studentName, setStudentName] = useState("");
@@ -55,6 +54,7 @@ export default function Students() {
   ];
   
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekDaysFull = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   useEffect(() => {
     loadStudents();
@@ -149,7 +149,7 @@ export default function Students() {
   const viewStudent = async (student: any) => {
     setSelectedStudent(student);
     setViewModal(true);
-    setActiveTab("information");
+    setActiveTab("attendance");
     await loadAttendanceHistory(student.id);
     await loadPaymentHistory(student.id);
   };
@@ -200,7 +200,7 @@ export default function Students() {
     return group ? group.age_group_name : "N/A";
   };
 
-  const getAttendanceStatus = (day: number, month: number, year: number) => {
+  const getAttendanceStatus = (day: number, month: number, year: number): string | null => {
     if (!selectedStudent || !attendanceHistory || attendanceHistory.length === 0)
       return null;
 
@@ -270,66 +270,39 @@ export default function Students() {
     return { totalPaid, outstanding, totalRecords };
   };
 
-  const getSessionDaysInMonth = (month: number, year: number) => {
-    const sessionDays: number[] = [];
+  const getMonthSessionDays = (month: number, year: number): { [key: string]: number[] } => {
+    const sessionDaysByWeekDay: { [key: string]: number[] } = {};
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Initialize all weekdays with empty arrays using full names
+    weekDaysFull.forEach(day => {
+      sessionDaysByWeekDay[day] = [];
+    });
     
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
       const hasSession = sessions.some((s) => s.day_of_week === dayOfWeek);
       if (hasSession) {
-        sessionDays.push(day);
+        if (sessionDaysByWeekDay[dayOfWeek] !== undefined) {
+          sessionDaysByWeekDay[dayOfWeek].push(day);
+        }
       }
     }
-    return sessionDays;
+    return sessionDaysByWeekDay;
   };
 
-  const getCalendarWeeks = (month: number, year: number) => {
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDayOfWeek = firstDay.getDay();
-
-    const weeks = [];
-    let currentWeek = [];
-
-    for (let i = 0; i < startDayOfWeek; i++) {
-      currentWeek.push(null);
+  // Get all 12 months for the selected year
+  const getAllMonths = () => {
+    const months = [];
+    for (let month = 0; month < 12; month++) {
+      months.push({ month, year: startYear });
     }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      currentWeek.push(day);
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-
-    if (currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
-      }
-      weeks.push(currentWeek);
-    }
-
-    return weeks;
+    return months;
   };
 
-  const changeHistoryMonth = (increment: number) => {
-    let newMonth = historyMonth + increment;
-    let newYear = historyYear;
-
-    if (newMonth > 11) {
-      newMonth = 0;
-      newYear++;
-    } else if (newMonth < 0) {
-      newMonth = 11;
-      newYear--;
-    }
-
-    setHistoryMonth(newMonth);
-    setHistoryYear(newYear);
+  const changeYear = (increment: number) => {
+    setStartYear(startYear + increment);
   };
 
   const filteredStudents = students.filter(
@@ -340,8 +313,7 @@ export default function Students() {
 
   const stats = getAttendanceStats();
   const paymentStats = getPaymentStats();
-  const monthStats = getMonthlyStats(historyMonth, historyYear);
-  const sessionDays = getSessionDaysInMonth(historyMonth, historyYear);
+  const allMonths = getAllMonths();
 
   return (
     <View style={styles.container}>
@@ -637,9 +609,26 @@ export default function Students() {
 
               {activeTab === "attendance" && (
                 <View style={styles.viewContent}>
-                  <Text style={styles.sectionTitle}>Attendance History ({historyYear})</Text>
-                  
-                  {/* Attendance Stats Summary */}
+                  <View style={styles.attendanceHeader}>
+                    <Text style={styles.sectionTitle}>Attendance History</Text>
+                    <View style={styles.navigationButtons}>
+                      <TouchableOpacity
+                        onPress={() => changeYear(-1)}
+                        style={styles.navButton}
+                      >
+                        <Ionicons name="chevron-back" size={20} color="#2563EB" />
+                      </TouchableOpacity>
+                      <Text style={styles.yearText}>{startYear}</Text>
+                      <TouchableOpacity
+                        onPress={() => changeYear(1)}
+                        style={styles.navButton}
+                      >
+                        <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Overall Stats */}
                   <View style={styles.attendanceSummary}>
                     <View style={styles.summaryRow}>
                       <View style={styles.summaryItem}>
@@ -659,152 +648,133 @@ export default function Students() {
                     </View>
                   </View>
 
-                  {/* Month Selector */}
-                  <View style={styles.historyNavigation}>
-                    <TouchableOpacity
-                      onPress={() => changeHistoryMonth(-1)}
-                      style={styles.historyNavButton}
-                    >
-                      <Ionicons name="chevron-back" size={24} color="#2563EB" />
-                    </TouchableOpacity>
-
-                    <View style={styles.historyMonthInfo}>
-                      <Text style={styles.historyMonthText}>
-                        {fullMonthNames[historyMonth]} {historyYear}
-                      </Text>
-                      <View style={styles.historyMonthStats}>
-                        <View style={styles.historyStatItem}>
-                          <View style={[styles.historyStatDot, styles.historyStatPresent]} />
-                          <Text style={styles.historyStatText}>
-                            {monthStats.present} present
-                          </Text>
-                        </View>
-                        <View style={styles.historyStatItem}>
-                          <View style={[styles.historyStatDot, styles.historyStatAbsent]} />
-                          <Text style={styles.historyStatText}>
-                            {monthStats.absent} absent
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() => changeHistoryMonth(1)}
-                      style={styles.historyNavButton}
-                    >
-                      <Ionicons name="chevron-forward" size={24} color="#2563EB" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Monthly Calendar View */}
-                  <View style={styles.monthlyCalendarContainer}>
-                    {/* Calendar Grid */}
-                    <View style={styles.calendarGrid}>
-                      {/* Week Days Header */}
-                      <View style={styles.weekDaysRow}>
-                        {weekDays.map((day) => (
-                          <Text key={day} style={styles.calendarWeekDayText}>
-                            {day}
-                          </Text>
-                        ))}
-                      </View>
-
-                      {/* Calendar Days */}
-                      {getCalendarWeeks(historyMonth, historyYear).map((week, weekIndex) => (
-                        <View key={weekIndex} style={styles.calendarWeek}>
-                          {week.map((day, dayIndex) => {
-                            if (day === null) {
-                              return <View key={dayIndex} style={styles.calendarDayEmpty} />;
-                            }
-
-                            // Check if this day has a session
-                            const dateObj = new Date(historyYear, historyMonth, day);
-                            const dayOfWeek = dateObj.toLocaleDateString("en-US", {
-                              weekday: "long",
-                            });
-                            const hasSession = sessions.some(
-                              (s) => s.day_of_week === dayOfWeek
-                            );
-
-                            // Only show session days
-                            if (!hasSession) {
-                              return <View key={dayIndex} style={styles.calendarDayEmpty} />;
-                            }
-
-                            const status = getAttendanceStatus(day, historyMonth, historyYear);
-                            const isToday = 
-                              day === new Date().getDate() &&
-                              historyMonth === new Date().getMonth() &&
-                              historyYear === new Date().getFullYear();
-
-                            let dayStyle = styles.calendarDaySession;
-                            let textStyle = styles.calendarDayTextSession;
-
-                            if (status === "Present") {
-                              dayStyle = styles.calendarDayPresent;
-                              textStyle = styles.calendarDayTextPresent;
-                            } else if (status === "Absent") {
-                              dayStyle = styles.calendarDayAbsent;
-                              textStyle = styles.calendarDayTextAbsent;
-                            } else if (isToday) {
-                              dayStyle = styles.calendarDayToday;
-                              textStyle = styles.calendarDayTextToday;
-                            }
-
-                            return (
-                              <View key={dayIndex} style={[styles.calendarDay, dayStyle]}>
-                                <Text style={[styles.calendarDayText, textStyle]}>
-                                  {day}
+                  {/* Horizontal Months with Vertical Days - All 12 months */}
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={true}
+                    style={styles.horizontalScrollView}
+                  >
+                    <View style={styles.horizontalMonthContainer}>
+                      {allMonths.map(({ month, year }, index) => {
+                        const sessionDaysByWeekDay = getMonthSessionDays(month, year);
+                        const monthStats = getMonthlyStats(month, year);
+                        
+                        // Get only days that have sessions
+                        const activeDays: { day: string; dates: number[] }[] = [];
+                        weekDaysFull.forEach(day => {
+                          if (sessionDaysByWeekDay[day] && sessionDaysByWeekDay[day].length > 0) {
+                            activeDays.push({ day, dates: sessionDaysByWeekDay[day] });
+                          }
+                        });
+                        
+                        return (
+                          <View key={index} style={styles.monthColumn}>
+                            <View style={styles.monthColumnHeader}>
+                              <Text style={styles.monthColumnTitle}>
+                                {monthNames[month]} {year}
+                              </Text>
+                              <View style={styles.monthColumnStats}>
+                                <Text style={styles.monthColumnStatText}>
+                                  P: {monthStats.present}
+                                </Text>
+                                <Text style={styles.monthColumnStatText}>
+                                  A: {monthStats.absent}
                                 </Text>
                               </View>
-                            );
-                          })}
-                        </View>
-                      ))}
-                    </View>
+                            </View>
 
-                    {/* Legend */}
-                    <View style={styles.legendContainer}>
-                      <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, styles.legendDotPresent]} />
-                        <Text style={styles.legendText}>Present</Text>
-                      </View>
-                      <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, styles.legendDotAbsent]} />
-                        <Text style={styles.legendText}>Absent</Text>
-                      </View>
-                      <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, styles.legendDotSession]} />
-                        <Text style={styles.legendText}>Session Day</Text>
-                      </View>
-                      <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, styles.legendDotToday]} />
-                        <Text style={styles.legendText}>Today</Text>
-                      </View>
-                    </View>
+                            {/* Day of Week Headers - Only active days */}
+                            <View style={styles.dayOfWeekHeaders}>
+                              {activeDays.map(({ day }) => (
+                                <View key={day} style={styles.dayOfWeekHeaderCell}>
+                                  <Text style={styles.dayOfWeekHeaderText}>
+                                    {day.substring(0, 3)}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
 
-                    {/* Overall Attendance */}
-                    <View style={styles.overallAttendance}>
-                      <View style={styles.attendanceRow}>
-                        <Text style={styles.attendanceLabel}>
-                          {stats.present} days present
-                        </Text>
-                        <Text style={styles.attendanceLabel}>
-                          {stats.absent} days absent
-                        </Text>
-                      </View>
-                      <View style={styles.attendanceBarContainer}>
-                        <Text style={styles.attendancePercentage}>
-                          Overall Attendance: {stats.percentage}%
-                        </Text>
-                        <View style={styles.progressBar}>
-                          <View
-                            style={[
-                              styles.progressFill,
-                              { width: `${stats.percentage}%` },
-                            ]}
-                          />
-                        </View>
+                            {/* Session Days Rows - Only active days */}
+                            <View style={styles.sessionDaysColumn}>
+                              {activeDays.map(({ day, dates }) => (
+                                <View key={day} style={styles.sessionDayCell}>
+                                  {dates.map((dayNumber, dayIndex) => {
+                                    const status = getAttendanceStatus(dayNumber, month, year);
+                                    const isToday = 
+                                      dayNumber === new Date().getDate() &&
+                                      month === new Date().getMonth() &&
+                                      year === new Date().getFullYear();
+
+                                    let dayStyle = styles.sessionDayNumber;
+                                    let textStyle = styles.sessionDayNumberText;
+
+                                    if (status === "Present") {
+                                      dayStyle = { ...styles.sessionDayNumber, ...styles.sessionDayNumberPresent };
+                                      textStyle = { ...styles.sessionDayNumberText, ...styles.sessionDayNumberTextPresent };
+                                    } else if (status === "Absent") {
+                                      dayStyle = { ...styles.sessionDayNumber, ...styles.sessionDayNumberAbsent };
+                                      textStyle = { ...styles.sessionDayNumberText, ...styles.sessionDayNumberTextAbsent };
+                                    } else if (isToday) {
+                                      dayStyle = { ...styles.sessionDayNumber, ...styles.sessionDayNumberToday };
+                                      textStyle = { ...styles.sessionDayNumberText, ...styles.sessionDayNumberTextToday };
+                                    }
+
+                                    return (
+                                      <View key={dayIndex} style={dayStyle}>
+                                        <Text style={textStyle}>{dayNumber}</Text>
+                                      </View>
+                                    );
+                                  })}
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+
+                  {/* Legend */}
+                  <View style={styles.legendContainer}>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.legendDotPresent]} />
+                      <Text style={styles.legendText}>Present</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.legendDotAbsent]} />
+                      <Text style={styles.legendText}>Absent</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.legendDotToday]} />
+                      <Text style={styles.legendText}>Today</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.legendDotSession]} />
+                      <Text style={styles.legendText}>Session Day</Text>
+                    </View>
+                  </View>
+
+                  {/* Overall Attendance */}
+                  <View style={styles.overallAttendance}>
+                    <View style={styles.attendanceRow}>
+                      <Text style={styles.attendanceLabel}>
+                        {stats.present} days present
+                      </Text>
+                      <Text style={styles.attendanceLabel}>
+                        {stats.absent} days absent
+                      </Text>
+                    </View>
+                    <View style={styles.attendanceBarContainer}>
+                      <Text style={styles.attendancePercentage}>
+                        Overall Attendance: {stats.percentage}%
+                      </Text>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${stats.percentage}%` },
+                          ]}
+                        />
                       </View>
                     </View>
                   </View>
