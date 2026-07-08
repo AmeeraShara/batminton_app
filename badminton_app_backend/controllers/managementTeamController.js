@@ -5,12 +5,8 @@ const Team = require("../models/managementTeamModel");
 exports.getMembers = (req, res) => {
   Team.getAll((err, results) => {
     if (err) {
-      console.log(err);
-      return res.status(500).json({
-        success: false,
-        message: "Database Error",
-        error: err,
-      });
+      console.error('Get all error:', err);
+      return res.status(500).json({ success: false, error: err });
     }
     res.json(results);
   });
@@ -21,10 +17,12 @@ exports.getMember = (req, res) => {
   const id = req.params.id;
   Team.getById(id, (err, results) => {
     if (err) {
-      return res.status(500).json(err);
+      console.error('Get by id error:', err);
+      return res.status(500).json({ success: false, error: err });
     }
     if (results.length === 0) {
       return res.status(404).json({
+        success: false,
         message: "Member not found",
       });
     }
@@ -35,6 +33,9 @@ exports.getMember = (req, res) => {
 // Create member
 exports.createMember = (req, res) => {
   const data = req.body;
+  console.log('Create member request body:', { ...data, password: data.password ? '***' : 'not provided' });
+  
+  // Validate required fields
   if (!data.name || !data.role || !data.email || !data.mobile || !data.password) {
     return res.status(400).json({
       success: false,
@@ -44,7 +45,7 @@ exports.createMember = (req, res) => {
 
   Team.create(data, (err, result) => {
     if (err) {
-      console.log(err);
+      console.error('Create error:', err);
       return res.status(500).json({
         success: false,
         message: "Database Error",
@@ -63,10 +64,23 @@ exports.createMember = (req, res) => {
 exports.updateMember = (req, res) => {
   const id = req.params.id;
   const data = req.body;
+  
+  console.log('Update member request:');
+  console.log('ID:', id);
+  console.log('Data:', { ...data, password: data.password ? '***' : 'not provided' });
 
-  // Check if member exists first
+  // Validate required fields
+  if (!data.name || !data.role || !data.email || !data.mobile) {
+    return res.status(400).json({
+      success: false,
+      message: "Name, Role, Email, and Mobile are required",
+    });
+  }
+
+  // Check if member exists
   Team.getById(id, (err, results) => {
     if (err) {
+      console.error('Get by id error:', err);
       return res.status(500).json({
         success: false,
         message: "Database Error",
@@ -80,15 +94,17 @@ exports.updateMember = (req, res) => {
       });
     }
 
-    Team.update(id, data, (err) => {
+    // Update the member
+    Team.update(id, data, (err, result) => {
       if (err) {
-        console.log(err);
+        console.error('Update error:', err);
         return res.status(500).json({
           success: false,
           message: "Database Error",
           error: err
         });
       }
+      console.log('Update successful');
       res.json({
         success: true,
         message: "Team member updated successfully",
@@ -100,10 +116,12 @@ exports.updateMember = (req, res) => {
 // Delete member
 exports.deleteMember = (req, res) => {
   const id = req.params.id;
-
-  // Check if member exists first
+  console.log('Deleting member with ID:', id);
+  
+  // Check if member exists
   Team.getById(id, (err, results) => {
     if (err) {
+      console.error('Get by id error:', err);
       return res.status(500).json({
         success: false,
         message: "Database Error",
@@ -117,15 +135,17 @@ exports.deleteMember = (req, res) => {
       });
     }
 
+    // Delete the member
     Team.remove(id, (err) => {
       if (err) {
-        console.log(err);
+        console.error('Delete error:', err);
         return res.status(500).json({
           success: false,
           message: "Database Error",
           error: err
         });
       }
+      console.log('Delete successful for ID:', id);
       res.json({
         success: true,
         message: "Team member deleted successfully",

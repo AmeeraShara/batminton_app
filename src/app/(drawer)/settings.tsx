@@ -30,7 +30,7 @@ interface ApiResponse {
   insertId?: number;
 }
 
-// Updated API URL - use your computer's IP address
+// API URL
 const getApiBaseUrl = () => {
   return 'http://192.168.100.169:5000/api/management-team';
 };
@@ -105,14 +105,20 @@ export default function Settings() {
       return;
     }
 
-    // Only validate password for new members
+    // For new members, password is required
     if (!editId && (!password.trim() || !confirmPassword.trim())) {
       Alert.alert('Error', 'Password is required for new members');
       return;
     }
 
-    // Validate password match only if password is provided
-    if (password && password !== confirmPassword) {
+    // For editing, if password is provided, it must match confirmation
+    if (editId && password.trim() && password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    // For new members, password must match confirmation
+    if (!editId && password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
@@ -125,14 +131,13 @@ export default function Settings() {
       role: role,
     };
 
-    // Only include password if it's provided (for updates) or always for new members
+    // IMPORTANT: Only include password if it's provided and not empty
+    // For editing, if password is empty, don't send it
     if (password.trim()) {
       memberData.password = password.trim();
-    } else if (!editId) {
-      // For new members, password is required
-      Alert.alert('Error', 'Password is required');
-      return;
     }
+
+    console.log('Sending data:', { ...memberData, password: memberData.password ? '***' : 'not provided' });
 
     try {
       setLoading(true);
@@ -147,7 +152,6 @@ export default function Settings() {
 
       console.log('Saving to:', url);
       console.log('Method:', method);
-      console.log('Data:', memberData);
       
       const response = await fetch(url, {
         method: method,
@@ -389,7 +393,7 @@ export default function Settings() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                editable={!loading && !editId} // Disable email editing when updating
+                editable={!loading && !editId}
                 placeholderTextColor="#94A3B8"
               />
               {editId && (
@@ -397,17 +401,20 @@ export default function Settings() {
               )}
 
               <TextInput
-                style={styles.input}
-                placeholder={editId ? "Enter new password (optional)" : "Enter password"}
+                style={[styles.input, editId && styles.optionalField]}
+                placeholder={editId ? "Enter new password (leave blank to keep current)" : "Enter password"}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 editable={!loading}
                 placeholderTextColor="#94A3B8"
               />
+              {editId && (
+                <Text style={styles.helperText}>Leave blank to keep current password</Text>
+              )}
 
               <TextInput
-                style={styles.input}
+                style={[styles.input, editId && styles.optionalField]}
                 placeholder={editId ? "Confirm new password" : "Confirm password"}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -600,6 +607,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 16,
     color: "#111827",
+  },
+  optionalField: {
+    borderColor: "#94A3B8",
+    borderStyle: 'dashed',
   },
   helperText: {
     fontSize: 12,
