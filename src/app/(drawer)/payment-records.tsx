@@ -63,9 +63,62 @@ export default function PaymentRecords() {
   ];
 
   const monthShort = [
-    "Ja", "Fe", "Mar", "Ap", "Ma", "Ju",
+    "Ja", "Fe", "Mar", "Ap", "Ma", "Jun",
     "Jul", "Au", "Se", "Oc", "No", "De"
   ];
+
+  // Get current month and year
+  const getCurrentMonthYear = () => {
+    const now = new Date();
+    return {
+      month: now.getMonth(), // 0-11
+      year: now.getFullYear(),
+      monthName: monthNames[now.getMonth() + 1],
+      monthShort: monthShort[now.getMonth()]
+    };
+  };
+
+  // Check if a payment month is in the past
+  const isPastMonth = (monthIndex: number) => {
+    const current = getCurrentMonthYear();
+    return monthIndex < current.month;
+  };
+
+  // Get month status for a student with overdue logic
+  const getMonthStatus = (studentId: number, monthIndex: number) => {
+    const monthName = monthShort[monthIndex];
+    
+    // Find payment for this student and month
+    const payment = payments.find(p => 
+      p.student_id === studentId && 
+      p.payment_month?.toLowerCase().includes(monthName.toLowerCase())
+    );
+    
+    // If no payment found
+    if (!payment) {
+      // Check if this month is in the past
+      if (isPastMonth(monthIndex)) {
+        return 'OVERDUE';
+      }
+      return 'No Payment';
+    }
+    
+    // If payment exists, check its status
+    const status = payment.status?.toUpperCase() || 'PAID';
+    
+    // If payment is PAID, keep it as PAID
+    if (status === 'PAID') {
+      return 'PAID';
+    }
+    
+    // If payment is PENDING or other status, check if month is past
+    if (isPastMonth(monthIndex)) {
+      return 'OVERDUE';
+    }
+    
+    // For current or future months, return the actual status
+    return status;
+  };
 
   useEffect(() => {
     loadData();
@@ -169,28 +222,28 @@ export default function PaymentRecords() {
   };
 
   const calculateStudentStatus = () => {
-    const studentIds = new Set(filteredPayments.map(p => p.student_id));
-    
-    // Count overdue students (students with any overdue payment)
+    const studentIds = new Set(payments.map(p => p.student_id));
     const overdueStudents = new Set();
     const upToDateStudents = new Set();
     
-    filteredPayments.forEach(payment => {
-      const status = payment.status?.toUpperCase() || 'PAID';
-      if (status === 'OVERDUE') {
-        overdueStudents.add(payment.student_id);
+    // Check each student's payment status for past months
+    students.forEach(student => {
+      let hasOverdue = false;
+      const current = getCurrentMonthYear();
+      
+      // Check all past months from Jan to last month
+      for (let month = 0; month < current.month; month++) {
+        const status = getMonthStatus(student.id, month);
+        if (status === 'OVERDUE') {
+          hasOverdue = true;
+          break;
+        }
       }
-    });
-    
-    // Students who have all payments up to date
-    filteredPayments.forEach(payment => {
-      const studentId = payment.student_id;
-      const studentPayments = filteredPayments.filter(p => p.student_id === studentId);
-      const allPaid = studentPayments.every(p => 
-        p.status?.toUpperCase() === 'PAID' || p.status?.toUpperCase() === 'PENDING'
-      );
-      if (allPaid && !overdueStudents.has(studentId)) {
-        upToDateStudents.add(studentId);
+      
+      if (hasOverdue) {
+        overdueStudents.add(student.id);
+      } else if (studentIds.has(student.id)) {
+        upToDateStudents.add(student.id);
       }
     });
     
@@ -305,9 +358,9 @@ export default function PaymentRecords() {
     return null;
   };
 
-  // Get student payment summary
+  // Get student payment summary with overdue calculation
   const getStudentPaymentSummary = (studentId: number) => {
-    const studentPayments = filteredPayments.filter(p => p.student_id === studentId);
+    const studentPayments = payments.filter(p => p.student_id === studentId);
     const totalPaid = studentPayments.reduce((sum, p) => {
       if (p.status?.toUpperCase() === 'PAID') {
         return sum + (parseFloat(p.amount) || 0);
@@ -315,23 +368,26 @@ export default function PaymentRecords() {
       return sum;
     }, 0);
     
-    const overdueCount = studentPayments.filter(p => p.status?.toUpperCase() === 'OVERDUE').length;
-    const paidCount = studentPayments.filter(p => p.status?.toUpperCase() === 'PAID').length;
-    const pendingCount = studentPayments.filter(p => p.status?.toUpperCase() === 'PENDING').length;
+    const current = getCurrentMonthYear();
+    let overdueCount = 0;
+    let paidCount = 0;
+    let pendingCount = 0;
     
-    return { totalPaid, overdueCount, paidCount, pendingCount, total: studentPayments.length };
-  };
-
-  // Get month status for a student
-  const getMonthStatus = (studentId: number, monthIndex: number) => {
-    const monthName = monthShort[monthIndex];
-    const payment = filteredPayments.find(p => 
-      p.student_id === studentId && 
-      p.payment_month?.toLowerCase().includes(monthName.toLowerCase())
-    );
+    // Check each past month
+    for (let month = 0; month < current.month; month++) {
+      const status = getMonthStatus(studentId, month);
+      if (status === 'OVERDUE') {
+        overdueCount++;
+      } else if (status === 'PAID') {
+        paidCount++;
+      } else if (status === 'PENDING') {
+        pendingCount++;
+      }
+    }
     
-    if (!payment) return 'No Payment';
-    return payment.status?.toUpperCase() || 'PAID';
+    const total = paidCount + pendingCount + overdueCount;
+    
+    return { totalPaid, overdueCount, paidCount, pendingCount, total };
   };
 
   // Generate Students HTML Table for PDF
@@ -625,7 +681,16 @@ export default function PaymentRecords() {
     `;
 
     filteredPayments.forEach(payment => {
-      const status = getPaymentStatus(payment.status || 'PAID');
+      // Check if payment is overdue
+      let status = payment.status || 'PAID';
+      const monthIndex = monthShort.findIndex(m => 
+        payment.payment_month?.toLowerCase().includes(m.toLowerCase())
+      );
+      if (monthIndex !== -1 && isPastMonth(monthIndex) && status !== 'PAID') {
+        status = 'OVERDUE';
+      }
+      const statusInfo = getPaymentStatus(status);
+      
       html += `
         <tr>
           <td>${getStudentName(payment.student_id)}</td>
@@ -635,7 +700,7 @@ export default function PaymentRecords() {
           <td>${formatDate(payment.created_at || payment.payment_date)}</td>
           <td>${payment.payment_method || 'N/A'}</td>
           <td>Rs ${parseFloat(payment.amount || 0).toFixed(2)}</td>
-          <td><span class="status-badge status-${status.label}">${status.label}</span></td>
+          <td><span class="status-badge status-${statusInfo.label}">${statusInfo.label}</span></td>
         </tr>
       `;
     });
@@ -744,16 +809,27 @@ export default function PaymentRecords() {
           'Status'
         ];
 
-        const rows = filteredPayments.map(payment => [
-          `"${getStudentName(payment.student_id)}"`,
-          `"${getStudentRegNumber(payment.student_id)}"`,
-          `"${getAgeGroupName(payment.student_id)}"`,
-          `"${payment.payment_month || 'N/A'}"`,
-          `"${formatDate(payment.created_at || payment.payment_date)}"`,
-          `"${payment.payment_method || 'N/A'}"`,
-          parseFloat(payment.amount || 0).toFixed(2),
-          `"${getPaymentStatus(payment.status || 'PAID').label}"`
-        ]);
+        const rows = filteredPayments.map(payment => {
+          let status = payment.status || 'PAID';
+          const monthIndex = monthShort.findIndex(m => 
+            payment.payment_month?.toLowerCase().includes(m.toLowerCase())
+          );
+          if (monthIndex !== -1 && isPastMonth(monthIndex) && status !== 'PAID') {
+            status = 'OVERDUE';
+          }
+          const statusInfo = getPaymentStatus(status);
+          
+          return [
+            `"${getStudentName(payment.student_id)}"`,
+            `"${getStudentRegNumber(payment.student_id)}"`,
+            `"${getAgeGroupName(payment.student_id)}"`,
+            `"${payment.payment_month || 'N/A'}"`,
+            `"${formatDate(payment.created_at || payment.payment_date)}"`,
+            `"${payment.payment_method || 'N/A'}"`,
+            parseFloat(payment.amount || 0).toFixed(2),
+            `"${statusInfo.label}"`
+          ];
+        });
 
         rows.push([
           '',
@@ -843,7 +919,15 @@ export default function PaymentRecords() {
 
   const renderPaymentItem = ({ item }: { item: any }) => {
     const methodInfo = getMethodIcon(item.payment_method);
-    const statusInfo = getPaymentStatus(item.status || 'PAID');
+    // Check if payment is overdue
+    let status = item.status || 'PAID';
+    const monthIndex = monthShort.findIndex(m => 
+      item.payment_month?.toLowerCase().includes(m.toLowerCase())
+    );
+    if (monthIndex !== -1 && isPastMonth(monthIndex) && status !== 'PAID') {
+      status = 'OVERDUE';
+    }
+    const statusInfo = getPaymentStatus(status);
     const amount = parseFloat(item.amount) || 0;
 
     return (
@@ -898,19 +982,28 @@ export default function PaymentRecords() {
         </View>
         
         <View style={styles.studentOverdueContainer}>
-          <Text style={styles.studentOverdueText}>
+          <Text style={[styles.studentOverdueText, summary.overdueCount > 0 && { color: '#EF4444', fontWeight: '700' }]}>
             {summary.overdueCount} Overdue
           </Text>
         </View>
         
-        {/* 12-Month Payment Status */}
+        {/* 12-Month Payment Status - Calendar View */}
         <View style={styles.monthlyStatusContainer}>
           {monthShort.map((month, index) => {
             const status = getMonthStatus(item.id, index);
             let dotColor = '#E5E7EB'; // no payment
-            if (status === 'PAID') dotColor = '#10B981';
-            else if (status === 'OVERDUE') dotColor = '#EF4444';
-            else if (status === 'PENDING') dotColor = '#F59E0B';
+            const current = getCurrentMonthYear();
+            
+            // Check if this is a future month
+            if (index > current.month) {
+              dotColor = '#E5E7EB'; // grey for future months
+            } else if (status === 'PAID') {
+              dotColor = '#10B981'; // green
+            } else if (status === 'OVERDUE') {
+              dotColor = '#EF4444'; // red
+            } else if (status === 'PENDING') {
+              dotColor = '#F59E0B'; // yellow/orange
+            }
             
             return (
               <View key={index} style={styles.monthDotContainer}>
@@ -1036,39 +1129,6 @@ export default function PaymentRecords() {
           </View>
         </View>
 
-        {/* Student Status Section - Only show in Students tab */}
-        {activeTab === 'students' && (
-          <View style={styles.studentStatusSection}>
-            <View style={styles.studentStatusContainer}>
-              <View style={styles.studentStatusItem}>
-                <Text style={styles.studentStatusNumber}>{studentStatus.total}</Text>
-                <Text style={styles.studentStatusLabel}>Students Displayed</Text>
-              </View>
-              
-              <View style={styles.statusDivider} />
-              
-              <View style={styles.studentStatusItem}>
-                <Text style={[styles.studentStatusNumber, styles.overdueNumber]}>
-                  {studentStatus.overdue}
-                </Text>
-                <Text style={[styles.studentStatusLabel, styles.overdueLabel]}>
-                  Overdue
-                </Text>
-              </View>
-              
-              <View style={styles.statusDivider} />
-              
-              <View style={styles.studentStatusItem}>
-                <Text style={[styles.studentStatusNumber, styles.upToDateNumber]}>
-                  {studentStatus.upToDate}
-                </Text>
-                <Text style={[styles.studentStatusLabel, styles.upToDateLabel]}>
-                  Up to date
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Summary Section */}
         <View style={styles.summarySection}>
