@@ -178,14 +178,11 @@ export default function Students() {
       const response = await fetch(PAYMENTS_API);
       if (response.ok) {
         const data = await response.json();
-        // Filter payments for this specific student
         const studentPayments = data.filter((p: any) => {
-          // Try different possible field names for student ID
           return p.student_id === studentId || 
                  p.studentId === studentId || 
                  p.student === studentId;
         });
-        console.log('Student payments found:', studentPayments.length);
         setPaymentHistory(studentPayments || []);
       } else {
         setPaymentHistory([]);
@@ -262,10 +259,8 @@ export default function Students() {
       return { totalPaid: 0, outstanding: 0, totalRecords: 0 };
     }
 
-    // Calculate total paid - sum of all payments regardless of status
     const totalPaid = paymentHistory.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
-    // Calculate outstanding - sum of payments that are not PAID
     const outstanding = paymentHistory
       .filter(p => p.status?.toUpperCase() !== 'PAID')
       .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
@@ -273,6 +268,21 @@ export default function Students() {
     const totalRecords = paymentHistory.length;
 
     return { totalPaid, outstanding, totalRecords };
+  };
+
+  const getSessionDaysInMonth = (month: number, year: number) => {
+    const sessionDays: number[] = [];
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
+      const hasSession = sessions.some((s) => s.day_of_week === dayOfWeek);
+      if (hasSession) {
+        sessionDays.push(day);
+      }
+    }
+    return sessionDays;
   };
 
   const getCalendarWeeks = (month: number, year: number) => {
@@ -331,6 +341,7 @@ export default function Students() {
   const stats = getAttendanceStats();
   const paymentStats = getPaymentStats();
   const monthStats = getMonthlyStats(historyMonth, historyYear);
+  const sessionDays = getSessionDaysInMonth(historyMonth, historyYear);
 
   return (
     <View style={styles.container}>
@@ -626,7 +637,7 @@ export default function Students() {
 
               {activeTab === "attendance" && (
                 <View style={styles.viewContent}>
-                  <Text style={styles.sectionTitle}>Attendance History</Text>
+                  <Text style={styles.sectionTitle}>Attendance History ({historyYear})</Text>
                   
                   {/* Attendance Stats Summary */}
                   <View style={styles.attendanceSummary}>
@@ -685,88 +696,71 @@ export default function Students() {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Calendar */}
-                  <View style={styles.historyCalendarContainer}>
-                    <View style={styles.weekDaysRow}>
-                      {weekDays.map((day) => (
-                        <Text key={day} style={styles.historyWeekDayText}>
-                          {day}
-                        </Text>
-                      ))}
-                    </View>
-
+                  {/* Monthly Calendar View */}
+                  <View style={styles.monthlyCalendarContainer}>
+                    {/* Calendar Grid */}
                     <View style={styles.calendarGrid}>
-                      {getCalendarWeeks(historyMonth, historyYear).map(
-                        (week, weekIndex) => (
-                          <View key={weekIndex} style={styles.calendarWeek}>
-                            {week.map((day, dayIndex) => {
-                              const status = day
-                                ? getAttendanceStatus(
-                                    day,
-                                    historyMonth,
-                                    historyYear,
-                                  )
-                                : null;
-                              const isToday =
-                                day === new Date().getDate() &&
-                                historyMonth === new Date().getMonth() &&
-                                historyYear === new Date().getFullYear();
+                      {/* Week Days Header */}
+                      <View style={styles.weekDaysRow}>
+                        {weekDays.map((day) => (
+                          <Text key={day} style={styles.calendarWeekDayText}>
+                            {day}
+                          </Text>
+                        ))}
+                      </View>
 
-                              const dateObj = day
-                                ? new Date(historyYear, historyMonth, day)
-                                : null;
-                              const dayOfWeek = dateObj
-                                ? dateObj.toLocaleDateString("en-US", {
-                                    weekday: "long",
-                                  })
-                                : null;
-                              const hasSession = dayOfWeek
-                                ? sessions.some(
-                                    (s) => s.day_of_week === dayOfWeek,
-                                  )
-                                : false;
+                      {/* Calendar Days */}
+                      {getCalendarWeeks(historyMonth, historyYear).map((week, weekIndex) => (
+                        <View key={weekIndex} style={styles.calendarWeek}>
+                          {week.map((day, dayIndex) => {
+                            if (day === null) {
+                              return <View key={dayIndex} style={styles.calendarDayEmpty} />;
+                            }
 
-                              return (
-                                <View
-                                  key={dayIndex}
-                                  style={[
-                                    styles.historyDay,
-                                    day === null && styles.calendarDayEmpty,
-                                    status === "Present" &&
-                                      styles.historyDayPresent,
-                                    status === "Absent" &&
-                                      styles.historyDayAbsent,
-                                    isToday && !status && styles.historyDayToday,
-                                    hasSession &&
-                                      !status &&
-                                      styles.historyDaySession,
-                                  ]}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.historyDayText,
-                                      day === null &&
-                                        styles.calendarDayTextEmpty,
-                                      status === "Present" &&
-                                        styles.historyDayTextPresent,
-                                      status === "Absent" &&
-                                        styles.historyDayTextAbsent,
-                                      isToday &&
-                                        !status &&
-                                        styles.historyDayTextToday,
-                                      hasSession &&
-                                        !status &&
-                                        styles.historyDayTextSession,
-                                    ]}
-                                  >
-                                    {day || ""}
-                                  </Text>
-                                </View>
-                              );
-                            })}
-                          </View>
-                        ),
-                      )}
+                            // Check if this day has a session
+                            const dateObj = new Date(historyYear, historyMonth, day);
+                            const dayOfWeek = dateObj.toLocaleDateString("en-US", {
+                              weekday: "long",
+                            });
+                            const hasSession = sessions.some(
+                              (s) => s.day_of_week === dayOfWeek
+                            );
+
+                            // Only show session days
+                            if (!hasSession) {
+                              return <View key={dayIndex} style={styles.calendarDayEmpty} />;
+                            }
+
+                            const status = getAttendanceStatus(day, historyMonth, historyYear);
+                            const isToday = 
+                              day === new Date().getDate() &&
+                              historyMonth === new Date().getMonth() &&
+                              historyYear === new Date().getFullYear();
+
+                            let dayStyle = styles.calendarDaySession;
+                            let textStyle = styles.calendarDayTextSession;
+
+                            if (status === "Present") {
+                              dayStyle = styles.calendarDayPresent;
+                              textStyle = styles.calendarDayTextPresent;
+                            } else if (status === "Absent") {
+                              dayStyle = styles.calendarDayAbsent;
+                              textStyle = styles.calendarDayTextAbsent;
+                            } else if (isToday) {
+                              dayStyle = styles.calendarDayToday;
+                              textStyle = styles.calendarDayTextToday;
+                            }
+
+                            return (
+                              <View key={dayIndex} style={[styles.calendarDay, dayStyle]}>
+                                <Text style={[styles.calendarDayText, textStyle]}>
+                                  {day}
+                                </Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      ))}
                     </View>
 
                     {/* Legend */}
@@ -829,7 +823,12 @@ export default function Students() {
                         Rs {(paymentStats.totalPaid || 0).toFixed(2)}
                       </Text>
                     </View>
-
+                    <View style={styles.paymentStatCard}>
+                      <Text style={styles.paymentStatLabel}>Outstanding Balance</Text>
+                      <Text style={[styles.paymentStatValue, styles.outstandingValue]}>
+                        Rs {(paymentStats.outstanding || 0).toFixed(2)}
+                      </Text>
+                    </View>
                   </View>
 
                   {/* Transaction History */}

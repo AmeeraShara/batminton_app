@@ -86,7 +86,6 @@ export default StyleSheet.create({
     justifyContent: "center",
   },
 
-  // Add/Edit Modal
   modal: {
     backgroundColor: "#fff",
     margin: 20,
@@ -150,7 +149,6 @@ export default StyleSheet.create({
     fontSize: 16,
   },
 
-  // View Modal
   viewModal: {
     backgroundColor: "#fff",
     margin: 20,
@@ -247,7 +245,6 @@ export default StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Attendance Summary Styles
   attendanceSummary: {
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
@@ -284,7 +281,6 @@ export default StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
 
-  // History Navigation
   historyNavigation: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -337,14 +333,27 @@ export default StyleSheet.create({
     color: '#64748B',
   },
 
-  // Calendar Styles
-  historyCalendarContainer: {
+  // Monthly Calendar Styles
+  monthlyCalendarContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     marginBottom: 16,
+  },
+
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  calendarMonthTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
   },
 
   weekDaysRow: {
@@ -353,7 +362,7 @@ export default StyleSheet.create({
     marginBottom: 8,
   },
 
-  historyWeekDayText: {
+  calendarWeekDayText: {
     fontSize: 12,
     color: '#94A3B8',
     fontWeight: '500',
@@ -371,7 +380,7 @@ export default StyleSheet.create({
     marginBottom: 4,
   },
 
-  historyDay: {
+  calendarDay: {
     width: 32,
     height: 32,
     justifyContent: 'center',
@@ -379,56 +388,57 @@ export default StyleSheet.create({
     borderRadius: 6,
   },
 
-  historyDayText: {
-    fontSize: 12,
-    color: '#111827',
+  calendarDaySession: {
+    backgroundColor: '#F3F4F6',
   },
 
-  historyDayPresent: {
+  calendarDayPresent: {
     backgroundColor: '#D1FAE5',
+    borderWidth: 1,
+    borderColor: '#10B981',
   },
 
-  historyDayTextPresent: {
-    color: '#065F46',
-    fontWeight: '600',
-  },
-
-  historyDayAbsent: {
+  calendarDayAbsent: {
     backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#EF4444',
   },
 
-  historyDayTextAbsent: {
-    color: '#991B1B',
-    fontWeight: '600',
-  },
-
-  historyDayToday: {
+  calendarDayToday: {
+    backgroundColor: '#EFF6FF',
     borderWidth: 2,
     borderColor: '#2563EB',
   },
 
-  historyDayTextToday: {
+  calendarDayText: {
+    fontSize: 12,
+    color: '#111827',
+  },
+
+  calendarDayTextSession: {
+    color: '#6B7280',
+  },
+
+  calendarDayTextPresent: {
+    color: '#065F46',
+    fontWeight: '600',
+  },
+
+  calendarDayTextAbsent: {
+    color: '#991B1B',
+    fontWeight: '600',
+  },
+
+  calendarDayTextToday: {
     color: '#2563EB',
     fontWeight: '700',
   },
 
-  historyDaySession: {
-    backgroundColor: '#EFF6FF',
-  },
-
-  historyDayTextSession: {
-    color: '#1E40AF',
-  },
-
   calendarDayEmpty: {
-    backgroundColor: 'transparent',
+    width: 32,
+    height: 32,
   },
 
-  calendarDayTextEmpty: {
-    color: 'transparent',
-  },
-
-  // Legend Styles
   legendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -460,13 +470,13 @@ export default StyleSheet.create({
   },
 
   legendDotSession: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: '#93C5FD',
+    borderColor: '#D1D5DB',
   },
 
   legendDotToday: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#EFF6FF',
     borderWidth: 2,
     borderColor: '#2563EB',
   },
@@ -476,7 +486,6 @@ export default StyleSheet.create({
     color: '#64748B',
   },
 
-  // Overall Attendance
   overallAttendance: {
     marginTop: 12,
     paddingTop: 12,
@@ -519,7 +528,6 @@ export default StyleSheet.create({
     borderRadius: 4,
   },
 
-  // Payment Summary Styles
   paymentSummary: {
     flexDirection: 'row',
     gap: 12,
@@ -550,7 +558,6 @@ export default StyleSheet.create({
     color: '#EF4444',
   },
 
-  // Transaction List
   transactionList: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -634,4 +641,19 @@ export default StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
   },
+  // Add these styles to your existing styles object
+noSessionDays: {
+  padding: 30,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#F8FAFC',
+  borderRadius: 8,
+  marginVertical: 10,
+},
+noSessionText: {
+  fontSize: 16,
+  color: '#94A3B8',
+  textAlign: 'center',
+  fontWeight: '500',
+},
 });
