@@ -470,6 +470,64 @@ export default StyleSheet.create({
     backgroundColor: "#2563EB",
     borderRadius: 4,
   },
+  // Payment Styles
+  paymentStudentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  paymentStudentName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  paymentStudentMeta: {
+    fontSize: 14,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: "#2563EB",
+    fontWeight: "500",
+  },
+  paymentSummaryCards: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 24,
+  },
+  paymentCard: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  paymentCardLabel: {
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "500",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  paymentCardValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  outstandingValue: {
+    color: "#EF4444",
+  },
   paymentSummary: {
     flexDirection: "row",
     gap: 12,
@@ -493,9 +551,6 @@ export default StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#0F172A",
-  },
-  outstandingValue: {
-    color: "#EF4444",
   },
   transactionList: {
     gap: 8,

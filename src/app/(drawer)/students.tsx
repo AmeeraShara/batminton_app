@@ -33,7 +33,7 @@ export default function Students() {
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
-  const [startYear, setStartYear] = useState(2026);
+  const [startYear, setStartYear] = useState(new Date().getFullYear());
 
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [studentName, setStudentName] = useState("");
@@ -201,10 +201,19 @@ export default function Students() {
   };
 
   const getAttendanceStatus = (day: number, month: number, year: number): string | null => {
-    if (!selectedStudent || !attendanceHistory || attendanceHistory.length === 0)
-      return null;
+    if (!selectedStudent || !attendanceHistory) return null;
 
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    const dateObj = new Date(year, month, day);
+    const dayOfWeek = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+    const hasSession = sessions.some((s) => s.day_of_week === dayOfWeek);
+
+    if (!hasSession) {
+      return null;
+    }
 
     const record = attendanceHistory.find((h) => {
       if (!h.attendance_date) return false;
@@ -216,41 +225,83 @@ export default function Students() {
     if (record) {
       return record.status || null;
     }
+
+    if (dateStr < todayStr) {
+      return "Absent";
+    }
+
     return null;
   };
 
   const getAttendanceStats = () => {
-    if (!attendanceHistory || attendanceHistory.length === 0) {
+    if (!selectedStudent || !attendanceHistory) {
       return { present: 0, absent: 0, total: 0, percentage: 0 };
     }
 
-    const present = attendanceHistory.filter(
-      (h) => h.status === "Present",
-    ).length;
-    const absent = attendanceHistory.filter(
-      (h) => h.status === "Absent",
-    ).length;
-    const total = attendanceHistory.length;
+    const today = new Date();
+    let present = 0;
+    let absent = 0;
+
+    for (let month = 0; month <= today.getMonth(); month++) {
+      const year = today.getFullYear();
+      const sessionDaysByWeekDay = getMonthSessionDays(month, year);
+      
+      const allSessionDays: number[] = [];
+      weekDaysFull.forEach(day => {
+        if (sessionDaysByWeekDay[day]) {
+          allSessionDays.push(...sessionDaysByWeekDay[day]);
+        }
+      });
+
+      allSessionDays.forEach(day => {
+        const dateObj = new Date(year, month, day);
+        if (dateObj <= today) {
+          const status = getAttendanceStatus(day, month, year);
+          if (status === "Present") {
+            present++;
+          } else if (status === "Absent") {
+            absent++;
+          }
+        }
+      });
+    }
+
+    const total = present + absent;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
     return { present, absent, total, percentage };
   };
 
   const getMonthlyStats = (month: number, year: number) => {
-    if (!attendanceHistory || attendanceHistory.length === 0) {
+    if (!selectedStudent || !attendanceHistory) {
       return { present: 0, absent: 0, total: 0 };
     }
 
-    const monthRecords = attendanceHistory.filter((h) => {
-      const date = h.attendance_date ? new Date(h.attendance_date) : null;
-      if (!date) return false;
-      return date.getMonth() === month && date.getFullYear() === year;
+    const today = new Date();
+    let present = 0;
+    let absent = 0;
+
+    const sessionDaysByWeekDay = getMonthSessionDays(month, year);
+    const allSessionDays: number[] = [];
+    weekDaysFull.forEach(day => {
+      if (sessionDaysByWeekDay[day]) {
+        allSessionDays.push(...sessionDaysByWeekDay[day]);
+      }
     });
 
-    const present = monthRecords.filter((h) => h.status === "Present").length;
-    const absent = monthRecords.filter((h) => h.status === "Absent").length;
-    const total = monthRecords.length;
+    allSessionDays.forEach(day => {
+      const dateObj = new Date(year, month, day);
+      if (dateObj <= today) {
+        const status = getAttendanceStatus(day, month, year);
+        if (status === "Present") {
+          present++;
+        } else if (status === "Absent") {
+          absent++;
+        }
+      }
+    });
 
+    const total = present + absent;
     return { present, absent, total };
   };
 
@@ -274,7 +325,6 @@ export default function Students() {
     const sessionDaysByWeekDay: { [key: string]: number[] } = {};
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    // Initialize all weekdays with empty arrays using full names
     weekDaysFull.forEach(day => {
       sessionDaysByWeekDay[day] = [];
     });
@@ -292,7 +342,6 @@ export default function Students() {
     return sessionDaysByWeekDay;
   };
 
-  // Get all 12 months for the selected year
   const getAllMonths = () => {
     const months = [];
     for (let month = 0; month < 12; month++) {
@@ -659,7 +708,6 @@ export default function Students() {
                         const sessionDaysByWeekDay = getMonthSessionDays(month, year);
                         const monthStats = getMonthlyStats(month, year);
                         
-                        // Get only days that have sessions
                         const activeDays: { day: string; dates: number[] }[] = [];
                         weekDaysFull.forEach(day => {
                           if (sessionDaysByWeekDay[day] && sessionDaysByWeekDay[day].length > 0) {
@@ -683,7 +731,6 @@ export default function Students() {
                               </View>
                             </View>
 
-                            {/* Day of Week Headers - Only active days */}
                             <View style={styles.dayOfWeekHeaders}>
                               {activeDays.map(({ day }) => (
                                 <View key={day} style={styles.dayOfWeekHeaderCell}>
@@ -694,7 +741,6 @@ export default function Students() {
                               ))}
                             </View>
 
-                            {/* Session Days Rows - Only active days */}
                             <View style={styles.sessionDaysColumn}>
                               {activeDays.map(({ day, dates }) => (
                                 <View key={day} style={styles.sessionDayCell}>
@@ -780,29 +826,32 @@ export default function Students() {
                   </View>
                 </View>
               )}
-
+                     <br></br>
               {activeTab === "payments" && (
                 <View style={styles.viewContent}>
-                  <Text style={styles.sectionTitle}>Payment Summary</Text>
                   
-                  {/* Payment Stats */}
-                  <View style={styles.paymentSummary}>
-                    <View style={styles.paymentStatCard}>
-                      <Text style={styles.paymentStatLabel}>Total Paid</Text>
-                      <Text style={styles.paymentStatValue}>
+
+                  {/* Payment Summary Cards */}
+                  <View style={styles.paymentSummaryCards}>
+                    <View style={styles.paymentCard}>
+                      <Text style={styles.paymentCardLabel}>Total Paid</Text>
+                      <Text style={styles.paymentCardValue}>
                         Rs {(paymentStats.totalPaid || 0).toFixed(2)}
                       </Text>
                     </View>
-                    <View style={styles.paymentStatCard}>
-                      <Text style={styles.paymentStatLabel}>Outstanding Balance</Text>
-                      <Text style={[styles.paymentStatValue, styles.outstandingValue]}>
+                     </View>
+                     <View>
+                    <View style={styles.paymentCard}>
+                      <Text style={styles.paymentCardLabel}>Outstanding Balance</Text>
+                      <Text style={[styles.paymentCardValue, styles.outstandingValue]}>
                         Rs {(paymentStats.outstanding || 0).toFixed(2)}
                       </Text>
                     </View>
-                  </View>
-
+                 </View>
+<br></br>
                   {/* Transaction History */}
                   <Text style={styles.sectionTitle}>Transaction History</Text>
+                  
                   {paymentHistory && paymentHistory.length > 0 ? (
                     <View style={styles.transactionList}>
                       {paymentHistory.map((payment, index) => (

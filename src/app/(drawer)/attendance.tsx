@@ -364,12 +364,23 @@ export default function Attendance() {
     setHistoryYear(historyYear + increment);
   };
 
-  const getAttendanceStatus = (day: number, month: number, year: number) => {
-    if (!selectedStudentId || !attendanceHistory || attendanceHistory.length === 0)
-      return null;
+  const getAttendanceStatus = (day: number, month: number, year: number): string | null => {
+    if (!selectedStudentId || !attendanceHistory) return null;
 
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
+    // Check if this date has a session
+    const dateObj = new Date(year, month, day);
+    const dayOfWeek = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+    const hasSession = sessions.some((s) => s.day_of_week === dayOfWeek);
+
+    if (!hasSession) {
+      return null;
+    }
+
+    // Check if attendance is already marked
     const record = attendanceHistory.find((h) => {
       if (!h.attendance_date) return false;
       const recordDate = new Date(h.attendance_date);
@@ -380,41 +391,89 @@ export default function Attendance() {
     if (record) {
       return record.status || null;
     }
+
+    // If date is in the past and has session but no attendance, mark as Absent
+    if (dateStr < todayStr) {
+      return "Absent";
+    }
+
     return null;
   };
 
   const getAttendanceStats = () => {
-    if (!attendanceHistory || attendanceHistory.length === 0) {
+    if (!selectedStudentId || !attendanceHistory) {
       return { present: 0, absent: 0, total: 0, percentage: 0 };
     }
 
-    const present = attendanceHistory.filter(
-      (h) => h.status === "Present",
-    ).length;
-    const absent = attendanceHistory.filter(
-      (h) => h.status === "Absent",
-    ).length;
-    const total = attendanceHistory.length;
+    // Get all session days up to today for this student
+    const today = new Date();
+    let present = 0;
+    let absent = 0;
+
+    // Check each month of the current year up to today
+    for (let month = 0; month <= today.getMonth(); month++) {
+      const year = today.getFullYear();
+      const sessionDaysByWeekDay = getMonthSessionDays(month, year);
+      
+      // Get all session days for this month
+      const allSessionDays: number[] = [];
+      weekDaysFull.forEach(day => {
+        if (sessionDaysByWeekDay[day]) {
+          allSessionDays.push(...sessionDaysByWeekDay[day]);
+        }
+      });
+
+      allSessionDays.forEach(day => {
+        const dateObj = new Date(year, month, day);
+        // Only count up to today
+        if (dateObj <= today) {
+          const status = getAttendanceStatus(day, month, year);
+          if (status === "Present") {
+            present++;
+          } else if (status === "Absent") {
+            absent++;
+          }
+        }
+      });
+    }
+
+    const total = present + absent;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
     return { present, absent, total, percentage };
   };
 
   const getMonthlyStats = (month: number, year: number) => {
-    if (!attendanceHistory || attendanceHistory.length === 0) {
+    if (!selectedStudentId || !attendanceHistory) {
       return { present: 0, absent: 0, total: 0 };
     }
 
-    const monthRecords = attendanceHistory.filter((h) => {
-      const date = h.attendance_date ? new Date(h.attendance_date) : null;
-      if (!date) return false;
-      return date.getMonth() === month && date.getFullYear() === year;
+    const today = new Date();
+    let present = 0;
+    let absent = 0;
+
+    const sessionDaysByWeekDay = getMonthSessionDays(month, year);
+    const allSessionDays: number[] = [];
+    weekDaysFull.forEach(day => {
+      if (sessionDaysByWeekDay[day]) {
+        allSessionDays.push(...sessionDaysByWeekDay[day]);
+      }
     });
 
-    const present = monthRecords.filter((h) => h.status === "Present").length;
-    const absent = monthRecords.filter((h) => h.status === "Absent").length;
-    const total = monthRecords.length;
+    allSessionDays.forEach(day => {
+      const dateObj = new Date(year, month, day);
+      // Only count up to today
+      if (dateObj <= today) {
+        const status = getAttendanceStatus(day, month, year);
+        if (status === "Present") {
+          present++;
+        } else if (status === "Absent") {
+          absent++;
+        }
+      }
+    });
 
+    const total = present + absent;
     return { present, absent, total };
   };
 
