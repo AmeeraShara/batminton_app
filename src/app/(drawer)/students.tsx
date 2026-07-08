@@ -276,10 +276,13 @@ export default function Students() {
                 onChangeText={setEmail}
               />
 
-              <View style={styles.pickerWrap}>
+              {/* Age Group - Styled consistently with other inputs */}
+              <View style={styles.ageGroupContainer}>
                 <Picker
                   selectedValue={ageGroupId}
                   onValueChange={(value) => setAgeGroupId(value)}
+                  style={styles.picker}
+                  dropdownIconColor="#64748B"
                 >
                   <Picker.Item label="Select Age Group" value="" />
                   {ageGroups.map((group: any) => (

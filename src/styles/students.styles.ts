@@ -104,13 +104,24 @@ export default StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
+    fontSize: 16,
+    backgroundColor: "#fff",
   },
 
-  pickerWrap: {
+  // Age Group Picker - Styled to match inputs
+  ageGroupContainer: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 12,
+    overflow: "hidden",
+    backgroundColor: "#fff",
+  },
+
+  picker: {
+    height: 50,
+    width: "100%",
+    backgroundColor: "transparent",
   },
 
   save: {
@@ -118,11 +129,13 @@ export default StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     alignItems: "center",
+    marginTop: 5,
   },
 
   saveText: {
     color: "#fff",
     fontWeight: "700",
+    fontSize: 16,
   },
 
   cancelBtn: {
@@ -133,5 +146,6 @@ export default StyleSheet.create({
   cancelText: {
     color: "#64748B",
     fontWeight: "600",
+    fontSize: 16,
   },
 });
