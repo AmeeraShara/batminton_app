@@ -190,14 +190,7 @@ export default StyleSheet.create({
     marginRight: 4,
   },
 
-  legendDotToday: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "#2563EB",
-  },
-  legendDotSelected: {
-    backgroundColor: "#2563EB",
-  },
+
 
   legendText: {
     fontSize: 12,
@@ -627,18 +620,147 @@ historyDayToday: {
   borderColor: '#2563EB',
 },
 
-legendDotSession: {
-  backgroundColor: '#EFF6FF',
+horizontalScrollView: {
+  flexGrow: 0,
+  marginBottom: 8,
+},
+horizontalMonthContainer: {
+  flexDirection: "row",
+  gap: 16,
+  paddingVertical: 8,
+  paddingHorizontal: 4,
+},
+monthColumn: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 12,
+  padding: 12,
   borderWidth: 1,
-  borderColor: '#93C5FD',
+  borderColor: "#E2E8F0",
+  minWidth: 80,
 },
-
-// If you need to add missing legend items
+monthColumnHeader: {
+  alignItems: "center",
+  marginBottom: 8,
+  paddingBottom: 8,
+  borderBottomWidth: 1,
+  borderBottomColor: "#F1F5F9",
+},
+monthColumnTitle: {
+  fontSize: 12,
+  fontWeight: "700",
+  color: "#0F172A",
+  marginBottom: 4,
+},
+monthColumnStats: {
+  flexDirection: "row",
+  gap: 8,
+},
+monthColumnStatText: {
+  fontSize: 10,
+  fontWeight: "500",
+  color: "#64748B",
+},
+dayOfWeekHeaders: {
+  flexDirection: "row",
+  marginBottom: 4,
+  justifyContent: "flex-start",
+},
+dayOfWeekHeaderCell: {
+  flex: 1,
+  alignItems: "center",
+  paddingVertical: 4,
+  minWidth: 28,
+},
+dayOfWeekHeaderText: {
+  fontSize: 9,
+  fontWeight: "600",
+  color: "#94A3B8",
+  textAlign: "center",
+},
+sessionDaysColumn: {
+  flexDirection: "row",
+  justifyContent: "flex-start",
+},
+sessionDayCell: {
+  flex: 1,
+  alignItems: "center",
+  gap: 3,
+  paddingVertical: 2,
+  minWidth: 28,
+},
+sessionDayNumber: {
+  width: 24,
+  height: 24,
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: 4,
+  backgroundColor: "#F8FAFC",
+  borderWidth: 1,
+  borderColor: "#E2E8F0",
+  marginVertical: 1,
+},
+sessionDayNumberPresent: {
+  backgroundColor: "#DCFCE7",
+  borderColor: "#86EFAC",
+},
+sessionDayNumberAbsent: {
+  backgroundColor: "#FEE2E2",
+  borderColor: "#FCA5A5",
+},
+sessionDayNumberToday: {
+  backgroundColor: "#DBEAFE",
+  borderWidth: 2,
+  borderColor: "#3B82F6",
+},
+sessionDayNumberText: {
+  fontSize: 10,
+  fontWeight: "500",
+  color: "#1E293B",
+},
+sessionDayNumberTextPresent: {
+  color: "#166534",
+},
+sessionDayNumberTextAbsent: {
+  color: "#991B1B",
+},
+sessionDayNumberTextToday: {
+  color: "#1D4ED8",
+  fontWeight: "500",
+},
+historyYearText: {
+  fontSize: 16,
+  fontWeight: "700",
+  color: "#0F172A",
+  minWidth: 60,
+  textAlign: "center",
+},
+historyLegendContainer: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "center",
+  gap: 12,
+  paddingVertical: 12,
+  borderTopWidth: 1,
+  borderTopColor: "#F1F5F9",
+  marginTop: 8,
+},
 legendDotPresent: {
-  backgroundColor: '#10B981',
+  backgroundColor: "#86EFAC",
 },
-
 legendDotAbsent: {
-  backgroundColor: '#EF4444',
+  backgroundColor: "#FCA5A5",
+},
+legendDotSession: {
+  backgroundColor: "#F8FAFC",
+  borderWidth: 1,
+  borderColor: "#E2E8F0",
+},
+legendDotToday: {
+  backgroundColor: "#DBEAFE",
+  borderWidth: 2,
+  borderColor: "#3B82F6",
+},
+legendDotSelected: {
+  backgroundColor: "#2563EB",
 },
 });
