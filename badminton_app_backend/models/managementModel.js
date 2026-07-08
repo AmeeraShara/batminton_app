@@ -1,24 +1,46 @@
-const db = require("../config/db");
+// models/managementTeamModel.js
+const db = require('../config/db');
 
-const createUser = (user, callback) => {
-  const sql =
-    "INSERT INTO management_team(name, role, email, mobile, password) VALUES(?,?,?,?,?)";
+const Team = {
+  getAll: (callback) => {
+    const query = 'SELECT id, name, mobile, email, role, created_at FROM team_members ORDER BY created_at DESC';
+    db.query(query, callback);
+  },
 
-  db.query(
-    sql,
-    [user.name, user.role, user.email, user.mobile, user.password],
-    callback,
-  );
+  getById: (id, callback) => {
+    const query = 'SELECT id, name, mobile, email, role FROM team_members WHERE id = ?';
+    db.query(query, [id], callback);
+  },
+
+  create: (data, callback) => {
+    const query = 'INSERT INTO team_members (name, mobile, email, password, role) VALUES (?, ?, ?, ?, ?)';
+    db.query(
+      query,
+      [data.name, data.mobile, data.email, data.password, data.role],
+      callback
+    );
+  },
+
+  update: (id, data, callback) => {
+    let query = 'UPDATE team_members SET name = ?, mobile = ?, email = ?, role = ?';
+    const params = [data.name, data.mobile, data.email, data.role];
+    
+    // If password is included in the update, add it to the query
+    if (data.password) {
+      query += ', password = ?';
+      params.push(data.password);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    db.query(query, params, callback);
+  },
+
+  remove: (id, callback) => {
+    const query = 'DELETE FROM team_members WHERE id = ?';
+    db.query(query, [id], callback);
+  }
 };
 
-// LOGIN: email OR mobile
-const findUserByEmailOrMobile = (identifier, callback) => {
-  const sql = "SELECT * FROM management_team WHERE email = ? OR mobile = ?";
-
-  db.query(sql, [identifier, identifier], callback);
-};
-
-module.exports = {
-  createUser,
-  findUserByEmailOrMobile,
-};
+module.exports = Team;
