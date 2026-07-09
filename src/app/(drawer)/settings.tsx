@@ -36,7 +36,33 @@ const getApiBaseUrl = () => {
     return 'http://localhost:5000/api/management-team';
   }
   // For physical device - use your computer's IP
-  return 'http://192.168.100.169:5000/api/management-team';
+  return 'http://localhost:5000/api/management-team'; // Replace with your IP
+};
+
+// Validation functions
+const validateEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validateMobile = (mobile: string) => {
+  // Remove any non-digit characters
+  const cleanMobile = mobile.replace(/\D/g, '');
+  const mobileRegex = /^[0-9]{10}$/;
+  return mobileRegex.test(cleanMobile);
+};
+
+const validatePassword = (password: string) => {
+  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+  return passwordRegex.test(password);
+};
+
+// Format mobile number for display
+const formatMobileDisplay = (mobile: string) => {
+  const clean = mobile.replace(/\D/g, '');
+  if (clean.length <= 10) return clean;
+  return clean.slice(0, 10);
 };
 
 export default function Settings() {
@@ -102,10 +128,30 @@ export default function Settings() {
     setEditId(null);
   };
 
+  const handleMobileChange = (text: string) => {
+    // Only allow digits
+    const cleaned = text.replace(/\D/g, '');
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+    setMobile(limited);
+  };
+
   const handleAddMember = async () => {
     // Validate required fields
     if (!name.trim() || !mobile.trim() || !email.trim() || !role) {
       Alert.alert('Error', 'Please fill in all required fields (Name, Mobile, Email, Role)');
+      return;
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    // Validate mobile number (10 digits)
+    if (!validateMobile(mobile)) {
+      Alert.alert('Error', 'Mobile number must be exactly 10 digits');
       return;
     }
 
@@ -116,16 +162,23 @@ export default function Settings() {
     }
 
     // Password validation
-    if (password.trim() && password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
+    if (password.trim()) {
+      if (password !== confirmPassword) {
+        Alert.alert('Error', 'Passwords do not match');
+        return;
+      }
+
+      if (!validatePassword(password)) {
+        Alert.alert('Error', 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number');
+        return;
+      }
     }
 
     // Build the member data
     const memberData: any = {
       name: name.trim(),
-      mobile: mobile.trim(),
-      email: email.trim(),
+      mobile: mobile.trim(), // Send as is, backend will clean it
+      email: email.trim().toLowerCase(),
       role: role,
     };
 
@@ -154,22 +207,18 @@ export default function Settings() {
       });
 
       const responseText = await response.text();
-
-      if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // If response is not JSON, use the text
-          if (responseText) {
-            errorMessage = responseText;
-          }
-        }
-        throw new Error(errorMessage);
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        throw new Error('Invalid response from server');
       }
 
-      const data = JSON.parse(responseText);
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
 
       Alert.alert('Success', data.message || 'Team member saved successfully');
       await fetchTeamMembers();
@@ -239,7 +288,8 @@ export default function Settings() {
   const handleEditMember = (member: TeamMember) => {
     setEditId(member.id);
     setName(member.name);
-    setMobile(member.mobile);
+    // Format mobile for display
+    setMobile(formatMobileDisplay(member.mobile));
     setEmail(member.email);
     setRole(member.role);
     setPassword(''); // Clear password field for edit
@@ -385,16 +435,21 @@ export default function Settings() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Enter mobile number"
+                placeholder="Enter mobile number (10 digits)"
                 value={mobile}
-                onChangeText={setMobile}
-                keyboardType="phone-pad"
+                onChangeText={handleMobileChange}
+                keyboardType="number-pad"
+                maxLength={10}
                 editable={!loading}
                 placeholderTextColor="#94A3B8"
               />
+              <Text style={styles.hintText}>
+                {mobile.length > 0 && mobile.length < 10 ? `Need ${10 - mobile.length} more digit(s)` : ''}
+                {mobile.length === 10 ? '✓ Valid mobile number' : ''}
+              </Text>
 
               <TextInput
-                style={styles.input}
+                style={[styles.input, editId && styles.disabledInput]}
                 placeholder="Enter email address"
                 value={email}
                 onChangeText={setEmail}
@@ -416,9 +471,18 @@ export default function Settings() {
                 editable={!loading}
                 placeholderTextColor="#94A3B8"
               />
-              {editId && (
-                <Text style={styles.helperText}>Leave blank to keep current password</Text>
-              )}
+              <Text style={styles.passwordHint}>
+                Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number
+              </Text>
+
+              {password.trim() ? (
+                <Text style={[
+                  styles.passwordStrength,
+                  validatePassword(password) ? styles.passwordValid : styles.passwordInvalid
+                ]}>
+                  {validatePassword(password) ? '✓ Password is strong' : '✗ Password is weak'}
+                </Text>
+              ) : null}
 
               <TextInput
                 style={[styles.input, editId && styles.optionalField]}
@@ -429,6 +493,10 @@ export default function Settings() {
                 editable={!loading}
                 placeholderTextColor="#94A3B8"
               />
+
+              {password.trim() && confirmPassword.trim() && password !== confirmPassword ? (
+                <Text style={styles.errorText}>Passwords do not match</Text>
+              ) : null}
 
               <Text style={styles.roleLabel}>Select Role</Text>
               <View style={styles.pickerWrap}>
@@ -492,6 +560,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 20 : 0,
   },
   centerContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -611,9 +680,13 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     borderRadius: 12,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 4,
     fontSize: 16,
     color: "#111827",
+  },
+  disabledInput: {
+    backgroundColor: "#F3F4F6",
+    color: "#6B7280",
   },
   optionalField: {
     borderColor: "#94A3B8",
@@ -622,9 +695,37 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: -8,
-    marginBottom: 12,
+    marginTop: -2,
+    marginBottom: 8,
     fontStyle: 'italic',
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: -2,
+    marginBottom: 8,
+  },
+  passwordHint: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+    marginBottom: 4,
+    fontStyle: 'italic',
+  },
+  passwordStrength: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  passwordValid: {
+    color: '#10B981',
+  },
+  passwordInvalid: {
+    color: '#EF4444',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginBottom: 8,
   },
   roleLabel: {
     fontSize: 14,

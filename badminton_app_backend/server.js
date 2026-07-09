@@ -38,5 +38,7 @@ app.use("/api/attendance", attendanceRoutes);
 const paymentRoutes = require("./routes/paymentRoutes");
 app.use("/api/payments", paymentRoutes);
 
+
 const managementTeamRoutes = require("./routes/managementTeamRoutes");
+console.log("Management Team Routes Loaded");
 app.use("/api/management-team", managementTeamRoutes);
