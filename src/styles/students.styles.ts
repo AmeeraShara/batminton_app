@@ -593,10 +593,10 @@ export default StyleSheet.create({
     marginTop: 4,
   },
   statusPaid: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "#00f957",
   },
   statusPending: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#22C55E",
   },
   transactionStatusText: {
     fontSize: 11,
@@ -606,7 +606,7 @@ export default StyleSheet.create({
     color: "#166534",
   },
   statusPendingText: {
-    color: "#92400E",
+    color: "#ffffff",
   },
   emptyState: {
     alignItems: "center",

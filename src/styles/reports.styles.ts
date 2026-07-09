@@ -4,6 +4,23 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+    padding: 20,
+  },
+  top: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  sub: {
+    fontSize: 14,
+    color: "#64748B",
+    marginTop: 2,
   },
 
   scrollContent: {
@@ -23,21 +40,7 @@ export default StyleSheet.create({
     color: "#6B7280",
   },
 
-  top: {
-    marginBottom: 16,
-  },
 
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-
-  sub: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
 
   errorContainer: {
     flexDirection: "row",
@@ -220,15 +223,15 @@ export default StyleSheet.create({
   },
 
   exportButton: {
-    backgroundColor: "#059669",
+    backgroundColor: "#ffffff",
   },
 
   excelButton: {
-    backgroundColor: "#059669",
+    backgroundColor: "#ffffff",
   },
 
   actionButtonText: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 14,
     fontWeight: "600",
   },

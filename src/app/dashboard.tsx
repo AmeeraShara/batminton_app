@@ -22,7 +22,6 @@ export default function Dashboard() {
   const [userName, setUserName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   
-  // Dashboard stats state
   const [dashboard, setDashboard] = useState({
     totalStudents: 0,
     totalAgeGroups: 0,
@@ -46,7 +45,6 @@ export default function Dashboard() {
       if (userData) {
         const parsedUser = JSON.parse(userData);
         
-        // Get user name from the management_team table structure
         const name = parsedUser?.name || parsedUser?.full_name || "User";
         const role = parsedUser?.role?.toLowerCase() || "admin";
         
@@ -55,8 +53,7 @@ export default function Dashboard() {
         setUserRole(role);
       } else {
         console.log("No user data found in storage");
-        // Redirect to login if no user
-        router.replace("/");
+        router.replace("/login");
       }
     } catch (error) {
       console.log("Error loading user:", error);
@@ -65,22 +62,16 @@ export default function Dashboard() {
     }
   };
 
-  // Load dashboard data
   const loadDashboard = async () => {
     try {
-      console.log('📊 Fetching dashboard data...');
       const response = await fetch(`${API_URL}/dashboard`);
-      
-      console.log('📊 Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('📊 Dashboard API response:', JSON.stringify(data, null, 2));
       
-      // Check if data has the expected structure
       if (data.success && data.data) {
         setDashboard({
           totalStudents: data.data.totalStudents || 0,
@@ -92,37 +83,9 @@ export default function Dashboard() {
           totalRevenue: data.data.totalRevenue || 0,
           todayRevenue: data.data.todayRevenue || 0
         });
-      } else {
-        console.error('Invalid data structure:', data);
-        // Use default values if structure is wrong
-        setDashboard({
-          totalStudents: 0,
-          totalAgeGroups: 0,
-          totalSessions: 0,
-          totalStaff: 0,
-          newStudentsToday: 0,
-          todayAttendance: 0,
-          totalRevenue: 0,
-          todayRevenue: 0
-        });
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
-      Alert.alert(
-        "Connection Error",
-        "Failed to load dashboard data. Please check your connection."
-      );
-      // Set default values on error
-      setDashboard({
-        totalStudents: 0,
-        totalAgeGroups: 0,
-        totalSessions: 0,
-        totalStaff: 0,
-        newStudentsToday: 0,
-        todayAttendance: 0,
-        totalRevenue: 0,
-        todayRevenue: 0
-      });
     }
   };
 
@@ -134,26 +97,62 @@ export default function Dashboard() {
     }
   };
 
-  const logout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          await AsyncStorage.removeItem("user");
-          router.replace("/");
+  const logout = async () => {
+    
+    // Show alert first
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => console.log(""),
         },
-      },
-    ]);
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            
+            try {
+              await AsyncStorage.removeItem("user");
+              
+              // Step 6: Close drawer
+              setDrawerVisible(false);
+              
+              // Step 7: Navigate
+              
+              // Try multiple navigation methods
+              try {
+                router.replace("/login");
+              } catch (navError) {
+                router.push("/login");
+              }
+              
+ 
+              
+            } catch (error) {
+              console.log(" Logout error:", error);
+              Alert.alert("Error", "Failed to logout. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
-  // Quick actions based on role
+  // TEST: Direct logout without alert
+  const directLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("user");
+      setDrawerVisible(false);
+      router.replace("/login");
+    } catch (error) {
+      console.log(" Error:", error);
+    }
+  };
+
   const getQuickActions = () => {
-    
     if (userRole === "coach") {
       return [
         {
@@ -193,7 +192,6 @@ export default function Dashboard() {
     ];
   };
 
-  // All menu items for administrators
   const allMenuItems = [
     {
       icon: "grid-outline",
@@ -257,7 +255,6 @@ export default function Dashboard() {
     },
   ];
 
-  // Coach menu items
   const coachMenuItems = [
     {
       icon: "grid-outline",
@@ -273,7 +270,6 @@ export default function Dashboard() {
     },
   ];
 
-  // Determine which menu items to show based on user role
   const getMenuItems = () => {
     if (userRole === "coach") {
       return coachMenuItems;
@@ -354,7 +350,6 @@ export default function Dashboard() {
   return (
     <>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.logo}>
             <Ionicons name="radio-button-on" size={24} color="#fff" />
@@ -365,7 +360,6 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Welcome Section with User Name and Info */}
         <View style={styles.welcomeSection}>
           <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.title}>{userName}</Text>
@@ -384,9 +378,7 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Stats Cards - 1 Column */}
         <View style={styles.statsContainer}>
-          {/* Total Students Card */}
           <TouchableOpacity 
             style={[styles.statsCard, styles.cardStudents]}
             onPress={() => router.push("/students" as any)}
@@ -406,7 +398,6 @@ export default function Dashboard() {
             </View>
           </TouchableOpacity>
 
-          {/* Age Groups Card */}
           <TouchableOpacity 
             style={[styles.statsCard, styles.cardAgeGroups]}
             onPress={() => router.push("/agegroups" as any)}
@@ -426,7 +417,6 @@ export default function Dashboard() {
             </View>
           </TouchableOpacity>
 
-          {/* Practice Sessions Card */}
           <TouchableOpacity 
             style={[styles.statsCard, styles.cardSessions]}
             onPress={() => router.push("/attendance" as any)}
@@ -446,10 +436,9 @@ export default function Dashboard() {
             </View>
           </TouchableOpacity>
 
-          {/* Team Members Card */}
           <TouchableOpacity 
             style={[styles.statsCard, styles.cardTeam]}
-            onPress={() => router.push("/management-team" as any)}
+            onPress={() => router.push("/settings" as any)}
             activeOpacity={0.8}
           >
             <View style={styles.statsCardContent}>
@@ -515,14 +504,19 @@ export default function Dashboard() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {menuItems.map((item, index) => renderDrawerItem(item, index))}
+              
+              <View style={{ marginTop: 20, gap: 10 }}>
+                <TouchableOpacity 
+                  style={[styles.logoutBtn, { backgroundColor: '#fcfcfc', borderColor: '#ffffff', borderWidth: 2 }]} 
+                  onPress={directLogout}
+                >
+                  <Ionicons name="log-out-outline" size={24} color="#000000" />
+                  <Text style={[styles.logoutText, { color: '#000000' }]}> LOGOUT</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ height: 30 }} />
             </ScrollView>
-
-            <View style={styles.line} />
-
-            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -607,7 +601,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Stats Container - 1 Column
   statsContainer: {
     marginBottom: 20,
   },
@@ -709,7 +702,6 @@ const styles = StyleSheet.create({
     color: "#1F2937",
   },
 
-  // Drawer styles
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -750,7 +742,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 15,
+    paddingVertical: 11,
   },
 
   drawerItemLeft: {
@@ -790,13 +782,13 @@ const styles = StyleSheet.create({
   },
 
   logoutBtn: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
     padding: 18,
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
 
   logoutText: {

@@ -236,17 +236,17 @@ export default StyleSheet.create({
     borderWidth: 1,
   },
   exportBtnPDF: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
+    backgroundColor: "#ffffff",
+    borderColor: "#ffffff",
   },
   exportBtnExcel: {
-    backgroundColor: "#ECFDF5",
-    borderColor: "#A7F3D0",
+    backgroundColor: "#ffffff",
+    borderColor: "#ffffff",
   },
   exportText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#2563EB",
+    color: "#000000",
   },
 
   // Transaction Table

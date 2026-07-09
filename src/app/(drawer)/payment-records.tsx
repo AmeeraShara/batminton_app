@@ -1198,10 +1198,10 @@ export default function PaymentRecords() {
                   disabled={exporting || (activeTab === 'transactions' ? filteredPayments.length === 0 : filteredStudents.length === 0)}
                 >
                   {exporting ? (
-                    <ActivityIndicator size="small" color="#2563EB" />
+                    <ActivityIndicator size="small" color="#000000" />
                   ) : (
                     <>
-                      <Ionicons name="document-text-outline" size={18} color="#2563EB" />
+                      <Ionicons name="document-text-outline" size={18} color="#000000" />
                       <Text style={styles.exportText}>PDF</Text>
                     </>
                   )}
@@ -1212,10 +1212,10 @@ export default function PaymentRecords() {
                   disabled={exporting || (activeTab === 'transactions' ? filteredPayments.length === 0 : filteredStudents.length === 0)}
                 >
                   {exporting ? (
-                    <ActivityIndicator size="small" color="#2563EB" />
+                    <ActivityIndicator size="small" color="#000000" />
                   ) : (
                     <>
-                      <Ionicons name="grid-outline" size={18} color="#2563EB" />
+                      <Ionicons name="grid-outline" size={18} color="#000000" />
                       <Text style={styles.exportText}>Excel</Text>
                     </>
                   )}

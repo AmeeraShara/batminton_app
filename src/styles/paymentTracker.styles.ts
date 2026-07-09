@@ -1,13 +1,16 @@
+// paymentTracker.styles.ts
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 20,
+    backgroundColor: "#F8FAFC",
+        padding: 20,
+
   },
 
   scrollContent: {
+    padding: 20,
     paddingBottom: 40,
   },
 
@@ -20,24 +23,42 @@ export default StyleSheet.create({
   loadingText: {
     marginTop: 12,
     color: "#64748B",
+    fontSize: 14,
   },
 
+  // Header section with logo and menu
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
-    marginTop: 5,
+    marginBottom: 16,
+  },
+
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  menuButton: {
+    padding: 4,
+  },
+
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "700",
+    color: "#0F172A",
   },
 
   sub: {
+    fontSize: 14,
     color: "#64748B",
-    marginTop: 4,
+    marginTop: 2,
   },
 
   dateBadge: {
@@ -69,18 +90,27 @@ export default StyleSheet.create({
   errorText: {
     color: "#EF4444",
     flex: 1,
+    fontSize: 14,
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 18,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 15,
   },
 
@@ -116,6 +146,7 @@ export default StyleSheet.create({
     fontWeight: "600",
     color: "#64748B",
     letterSpacing: 0.5,
+    marginBottom: 6,
   },
 
   pickerWrap: {
@@ -134,6 +165,7 @@ export default StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     backgroundColor: "#F8FAFC",
+    color: "#0F172A",
   },
 
   submitBtn: {
@@ -144,18 +176,30 @@ export default StyleSheet.create({
     marginTop: 5,
   },
 
+  submitBtnDisabled: {
+    opacity: 0.7,
+    backgroundColor: "#94A3B8",
+  },
+
   submitBtnText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 16,
   },
 
   // Student Card
   studentCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 18,
     marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   studentHeader: {
@@ -187,6 +231,7 @@ export default StyleSheet.create({
   studentName: {
     fontSize: 18,
     fontWeight: "700",
+    color: "#0F172A",
   },
 
   studentGroup: {
@@ -217,15 +262,23 @@ export default StyleSheet.create({
 
   // Status Card
   statusCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 18,
     marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   statusTitle: {
     fontSize: 16,
     fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 12,
   },
 
@@ -279,15 +332,23 @@ export default StyleSheet.create({
 
   // Transaction Card - Table View
   transactionCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 18,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   transactionTitle: {
     fontSize: 16,
     fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 15,
   },
 
@@ -351,6 +412,28 @@ export default StyleSheet.create({
     fontSize: 14,
   },
 
+  // No Student Selected
+  noStudentSelected: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderStyle: "dashed",
+  },
+
+  noStudentText: {
+    fontSize: 16,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 12,
+    fontWeight: "500",
+  },
+
   // Modal
   overlay: {
     flex: 1,
@@ -359,7 +442,7 @@ export default StyleSheet.create({
   },
 
   modal: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     margin: 20,
     borderRadius: 20,
     padding: 20,
@@ -376,6 +459,7 @@ export default StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
+    color: "#0F172A",
   },
 
   modalSearch: {
@@ -384,6 +468,8 @@ export default StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 15,
+    backgroundColor: "#F8FAFC",
+    color: "#0F172A",
   },
 
   modalStudentItem: {
@@ -417,35 +503,69 @@ export default StyleSheet.create({
   modalStudentName: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#0F172A",
   },
 
   modalStudentReg: {
     fontSize: 13,
     color: "#64748B",
   },
-  submitBtnDisabled: {
-    opacity: 0.7,
-    backgroundColor: '#94A3B8',
+
+  // Add Button (for consistency with Students module)
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2563EB",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 6,
   },
 
-  noStudentSelected: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    marginBottom: 20,
+  addTxt: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
+  // Search (for consistency with Students module)
+  search: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
+    borderColor: "#E2E8F0",
+    fontSize: 14,
+    marginBottom: 16,
+    color: "#0F172A",
   },
 
-  noStudentText: {
-    fontSize: 16,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 12,
-    fontWeight: '500',
+  // Table Container (for consistency with Students module)
+  tableContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    flex: 1,
+  },
+
+  // Additional table styles
+  headerCell: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
+    textTransform: "uppercase",
+  },
+
+  cell: {
+    fontSize: 14,
+    color: "#1E293B",
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

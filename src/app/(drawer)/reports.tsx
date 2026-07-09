@@ -190,7 +190,7 @@ export default function Reports() {
     }
   };
 
-  // ==================== ATTENDANCE REPORT FUNCTIONS ====================
+ 
 
   const getSessionDaysForMonth = (year: number, month: number): Date[] => {
     const sessionDays: Date[] = [];
@@ -331,7 +331,7 @@ export default function Reports() {
     });
   };
 
-  // ==================== PAYMENT REPORT FUNCTIONS ====================
+ 
 
   const generatePaymentReport = () => {
     let filteredStudents = [...students];
@@ -395,7 +395,7 @@ export default function Reports() {
     });
   };
 
-  // ==================== HELPERS ====================
+
 
   const getFileSystemDirectory = () => {
     try {
@@ -435,7 +435,7 @@ export default function Reports() {
     }
   };
 
-  // ==================== EXPORT FUNCTIONS ====================
+ 
 
   const generateAttendanceHTML = () => {
     const year = parseInt(selectedYear);
@@ -720,7 +720,7 @@ export default function Reports() {
     }
   };
 
-  // ==================== RENDER FUNCTIONS ====================
+ 
 
   const renderAttendanceReport = () => {
     const year = parseInt(selectedYear);
@@ -921,7 +921,6 @@ export default function Reports() {
     );
   };
 
-  // ==================== MAIN RENDER ====================
 
   if (loading) {
     return (
@@ -1089,10 +1088,10 @@ export default function Reports() {
             disabled={exporting || (activeTab === 'attendance' ? attendanceData.length === 0 : paymentReportData.length === 0)}
           >
             {exporting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color="#000000" />
             ) : (
               <>
-                <Ionicons name="document-text-outline" size={20} color="#FFFFFF" />
+                <Ionicons name="document-text-outline" size={20} color="#000000" />
                 <Text style={styles.actionButtonText}>PDF</Text>
               </>
             )}
@@ -1104,10 +1103,10 @@ export default function Reports() {
             disabled={exporting || (activeTab === 'attendance' ? attendanceData.length === 0 : paymentReportData.length === 0)}
           >
             {exporting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color="#000000" />
             ) : (
               <>
-                <Ionicons name="grid-outline" size={20} color="#FFFFFF" />
+                <Ionicons name="grid-outline" size={20} color="#000000" />
                 <Text style={styles.actionButtonText}>Excel</Text>
               </>
             )}

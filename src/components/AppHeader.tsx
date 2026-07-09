@@ -9,6 +9,7 @@ import {
     Text,
     TouchableOpacity,
     View,
+    ScrollView,
 } from "react-native";
 
 export default function AppHeader() {
@@ -25,12 +26,8 @@ export default function AppHeader() {
   const loadUser = async () => {
     try {
       const data = await AsyncStorage.getItem("user");
-
-
       if (data) {
         const parsedUser = JSON.parse(data);
-
-        
         setUser(parsedUser);
         setUserRole(parsedUser?.role?.toLowerCase() || "");
       }
@@ -51,27 +48,46 @@ export default function AppHeader() {
 
   const navigateTo = (route: string) => {
     setDrawerVisible(false);
-
     setTimeout(() => {
       router.replace(route as any);
     }, 150);
   };
 
-  const logout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          await AsyncStorage.removeItem("user");
-          router.replace("/");
+  // DIRECT LOGOUT - No confirmation, just logout
+  const directLogout = async () => {
+    try {
+      // Clear user data
+      await AsyncStorage.removeItem("user");
+      
+      // Close drawer
+      setDrawerVisible(false);
+      
+      // Navigate to login
+      router.replace("/login");
+      
+    } catch (error) {
+      Alert.alert("Error", "Failed to logout. Please try again.");
+    }
+  };
+
+  // Logout with confirmation using Alert
+  const logoutWithConfirm = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => console.log(" Logout cancelled"),
         },
-      },
-    ]);
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: directLogout,
+        },
+      ]
+    );
   };
 
   // All menu items for administrators
@@ -156,14 +172,10 @@ export default function AppHeader() {
 
   // Determine which menu items to show based on user role
   const getMenuItems = () => {
-    // Check if user role is coach (case insensitive)
     const role = userRole || user?.role?.toLowerCase() || "";
-    
     if (role === "coach") {
       return coachMenuItems;
     }
-    
-    // For administrator or any other role, show all items
     return allMenuItems;
   };
 
@@ -253,37 +265,49 @@ export default function AppHeader() {
       <Modal transparent visible={drawerVisible} animationType="fade">
         <View style={styles.overlay}>
           <View style={styles.drawer}>
-            <View style={styles.drawerHeader}>
-              <View>
-                <Text style={styles.drawerName}>
-                  {user?.name || user?.full_name || "User"}
-                </Text>
-
-                <Text style={styles.drawerRole}>
-                  {user?.role || "Administrator"}
-                </Text>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ 
+                paddingBottom: 40,
+                flexGrow: 1 
+              }}
+            >
+              <View style={styles.drawerHeader}>
+                <View>
+                  <Text style={styles.drawerName}>
+                    {user?.name || user?.full_name || "User"}
+                  </Text>
+                  <Text style={styles.drawerRole}>
+                    {user?.role || "Administrator"}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setDrawerVisible(false)}>
+                  <Ionicons name="close-circle-outline" size={34} color="#4F7CFF" />
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity onPress={() => setDrawerVisible(false)}>
-                <Ionicons
-                  name="close-circle-outline"
-                  size={34}
-                  color="#4F7CFF"
-                />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.line} />
 
-            <View style={styles.line} />
+              {menuItems.map((item, index) => renderDrawerItem(item, index))}
 
-            {menuItems.map((item, index) => renderDrawerItem(item, index))}
+              <View style={styles.line} />
+              <View style={{ gap: 10 }}>
+                <TouchableOpacity 
+                  style={[styles.logoutBtn, { 
+                    backgroundColor: '#fefefe', 
+                    borderColor: '#ffffff', 
+                    borderWidth: 2 
+                  }]} 
+                  onPress={directLogout}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="log-out-outline" size={24} color="#000000" />
+                  <Text style={[styles.logoutText, { color: '#000000' }]}> Logout</Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.line} />
-
-            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
+              <View style={{ height: 20 }} />
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -299,7 +323,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-
   logo: {
     width: 48,
     height: 48,
@@ -308,12 +331,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
   },
-
   drawer: {
     width: "82%",
     height: "100%",
@@ -321,85 +342,80 @@ const styles = StyleSheet.create({
     paddingTop: 55,
     paddingHorizontal: 28,
   },
-
   drawerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   drawerName: {
     fontSize: 28,
     fontWeight: "700",
   },
-
   drawerRole: {
     color: "#64748B",
     marginTop: 5,
   },
-
   line: {
     height: 1,
     backgroundColor: "#E5E7EB",
     marginVertical: 20,
   },
-
   drawerItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 15,
+    paddingVertical: 11,
   },
-
   drawerItemLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   drawerText: {
     marginLeft: 18,
     fontSize: 18,
     color: "#111827",
   },
-
   subMenuContainer: {
     marginLeft: 20,
     backgroundColor: "#F8FAFC",
     borderRadius: 10,
     marginBottom: 8,
   },
-
   subMenuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-
   subMenuItemLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   subMenuText: {
     marginLeft: 18,
     fontSize: 16,
     color: "#475569",
   },
-
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderWidth: 2,
+    borderColor: "#EF4444",
     borderRadius: 15,
     padding: 16,
+    backgroundColor: "#FEF2F2",
+    marginBottom: 5,
+    shadowColor: "#EF4444",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-
   logoutText: {
     marginLeft: 10,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 16,
     color: "#EF4444",
   },
 });

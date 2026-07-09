@@ -2,19 +2,21 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
+
   content: {
     padding: 16,
     paddingBottom: 100,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    padding: 20,
   },
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
     fontSize: 24,
@@ -24,7 +26,7 @@ export default StyleSheet.create({
   sub: {
     fontSize: 14,
     color: "#64748B",
-    marginTop: 4,
+    marginTop: 2,
   },
   section: {
     marginBottom: 16,

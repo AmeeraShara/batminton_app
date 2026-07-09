@@ -1,9 +1,29 @@
-import { Redirect } from "expo-router";
+import { useEffect } from 'react';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, ActivityIndicator } from 'react-native';
 
 export default function Index() {
-  return <Redirect href="/login" />;
-}
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await AsyncStorage.getItem('user');
+        if (user) {
+          router.replace('/dashboard');
+        } else {
+          router.replace('/login');
+        }
+      } catch (error) {
+        router.replace('/login');
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
-// import { router } from "expo-router";
-// router.push("/register");
-// router.push("/login");
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" color="#2563EB" />
+    </View>
+  );
+}
