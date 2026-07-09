@@ -15,6 +15,8 @@ export default function AppHeader() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUser();
@@ -24,11 +26,18 @@ export default function AppHeader() {
     try {
       const data = await AsyncStorage.getItem("user");
 
+
       if (data) {
-        setUser(JSON.parse(data));
+        const parsedUser = JSON.parse(data);
+
+        
+        setUser(parsedUser);
+        setUserRole(parsedUser?.role?.toLowerCase() || "");
       }
     } catch (error) {
-      console.log(error);
+      console.log("Error loading user:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,7 +74,8 @@ export default function AppHeader() {
     ]);
   };
 
-  const menuItems = [
+  // All menu items for administrators
+  const allMenuItems = [
     {
       icon: "grid-outline",
       title: "Dashboard",
@@ -128,6 +138,37 @@ export default function AppHeader() {
     },
   ];
 
+  // Coach menu items (only Dashboard, Sessions)
+  const coachMenuItems = [
+    {
+      icon: "grid-outline",
+      title: "Dashboard",
+      route: "/dashboard",
+      isParent: false,
+    },
+    {
+      icon: "calendar-outline",
+      title: "Sessions",
+      route: "/sessions",
+      isParent: false,
+    },
+  ];
+
+  // Determine which menu items to show based on user role
+  const getMenuItems = () => {
+    // Check if user role is coach (case insensitive)
+    const role = userRole || user?.role?.toLowerCase() || "";
+    
+    if (role === "coach") {
+      return coachMenuItems;
+    }
+    
+    // For administrator or any other role, show all items
+    return allMenuItems;
+  };
+
+  const menuItems = getMenuItems();
+
   const renderDrawerItem = (item: any, index: number) => {
     if (item.isParent) {
       const isExpanded = expandedMenu === item.title;
@@ -184,6 +225,17 @@ export default function AppHeader() {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.header}>
+        <View style={styles.logo}>
+          <Ionicons name="radio-button-on" size={24} color="#fff" />
+        </View>
+        <View style={{ width: 28, height: 28, backgroundColor: "#E2E8F0", borderRadius: 8 }} />
+      </View>
+    );
+  }
+
   return (
     <>
       {/* Header */}
@@ -204,7 +256,7 @@ export default function AppHeader() {
             <View style={styles.drawerHeader}>
               <View>
                 <Text style={styles.drawerName}>
-                  {user?.full_name || "User"}
+                  {user?.name || user?.full_name || "User"}
                 </Text>
 
                 <Text style={styles.drawerRole}>

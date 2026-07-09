@@ -1,4 +1,5 @@
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -25,19 +26,25 @@ export default function Login() {
 
       const response = await axios.post(
         "http://192.168.100.169:5000/api/auth/login",
-
         {
           identifier: user,
           password: password,
         },
       );
 
-      Alert.alert("Success", response.data.message);
 
+      // Store the user data with name and role
+      if (response.data.user) {
+        const userData = response.data.user;
+      
+        
+        await AsyncStorage.setItem("user", JSON.stringify(userData));
+      }
+
+      Alert.alert("Success", response.data.message);
       router.replace("/dashboard");
     } catch (error: any) {
-      console.log("Login Error:", error);
-
+      console.log(" Login Error:", error);
       Alert.alert(
         "Login Failed",
         error?.response?.data?.message || "Something went wrong",

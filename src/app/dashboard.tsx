@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -11,13 +12,27 @@ import {
   View,
 } from "react-native";
 
+
+const API_URL = "http://192.168.100.169:5000/api"; // Default for Android emulator
+
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Dashboard stats state
+  const [dashboard, setDashboard] = useState({
+    totalStudents: 0,
+    totalAgeGroups: 0,
+    totalSessions: 0,
+  });
 
   useEffect(() => {
     loadUser();
+    loadDashboard();
   }, []);
 
   const loadUser = async () => {
@@ -25,10 +40,53 @@ export default function Dashboard() {
       const userData = await AsyncStorage.getItem("user");
 
       if (userData) {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        
+        // Get user name from the management_team table structure
+        const name = parsedUser?.name || parsedUser?.full_name || "User";
+        const role = parsedUser?.role?.toLowerCase() || "admin";
+        
+        setUser(parsedUser);
+        setUserName(name);
+        setUserRole(role);
+        console.log("User loaded:", { name, role });
+      } else {
+        console.log("No user data found in storage");
+        // Redirect to login if no user
+        router.replace("/");
       }
     } catch (error) {
-      console.log(error);
+      console.log("Error loading user:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load dashboard data
+  const loadDashboard = async () => {
+    try {
+      console.log("Fetching dashboard data from:", `${API_URL}/dashboard`);
+      
+      const response = await fetch(`${API_URL}/dashboard`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Dashboard data received:", data);
+
+      setDashboard({
+        totalStudents: data.totalStudents || 0,
+        totalAgeGroups: data.totalAgeGroups || 0,
+        totalSessions: data.totalSessions || 0,
+      });
+    } catch (error) {
+      console.log("Error loading dashboard:", error);
+      Alert.alert(
+        "Connection Error",
+        "Failed to load dashboard data. Please check your connection."
+      );
     }
   };
 
@@ -40,40 +98,78 @@ export default function Dashboard() {
     }
   };
 
-  const quickActions = [
-    {
-      title: "Manage Students",
-      icon: "people-outline",
-      route: "/students",
-    },
-    {
-      title: "Payment Tracker",
-      icon: "trending-up-outline",
-      route: "/payment-tracker",
-    },
-    {
-      title: "Payment Records",
-      icon: "receipt-outline",
-      route: "/payment-records",
-    },
-    {
-      title: "Age Groups",
-      icon: "radio-button-on-outline",
-      route: "/agegroups",
-    },
-    {
-      title: "Practice Sessions",
-      icon: "calendar-outline",
-      route: "/attendance",
-    },
-    {
-      title: "Settings",
-      icon: "settings-outline",
-      route: "/settings",
-    },
-  ];
+  const logout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.removeItem("user");
+          router.replace("/");
+        },
+      },
+    ]);
+  };
 
-  const menuItems = [
+  // Quick actions based on role
+  const getQuickActions = () => {
+    console.log("Getting quick actions for role:", userRole);
+    
+    if (userRole === "coach") {
+      return [
+        {
+          title: "Practice Sessions",
+          icon: "calendar-outline",
+          route: "/attendance",
+        },
+        {
+          title: "Settings",
+          icon: "settings-outline",
+          route: "/settings",
+        },
+      ];
+    }
+    
+    return [
+      {
+        title: "Manage Students",
+        icon: "people-outline",
+        route: "/students",
+      },
+      {
+        title: "Payment Tracker",
+        icon: "trending-up-outline",
+        route: "/payment-tracker",
+      },
+      {
+        title: "Payment Records",
+        icon: "receipt-outline",
+        route: "/payment-records",
+      },
+      {
+        title: "Age Groups",
+        icon: "radio-button-on-outline",
+        route: "/agegroups",
+      },
+      {
+        title: "Practice Sessions",
+        icon: "calendar-outline",
+        route: "/attendance",
+      },
+      {
+        title: "Settings",
+        icon: "settings-outline",
+        route: "/settings",
+      },
+    ];
+  };
+
+  // All menu items for administrators
+  const allMenuItems = [
     {
       icon: "grid-outline",
       title: "Dashboard",
@@ -136,6 +232,33 @@ export default function Dashboard() {
     },
   ];
 
+  // Coach menu items
+  const coachMenuItems = [
+    {
+      icon: "grid-outline",
+      title: "Dashboard",
+      route: "/dashboard",
+      isParent: false,
+    },
+    {
+      icon: "calendar-outline",
+      title: "Sessions",
+      route: "/sessions",
+      isParent: false,
+    },
+  ];
+
+  // Determine which menu items to show based on user role
+  const getMenuItems = () => {
+    if (userRole === "coach") {
+      return coachMenuItems;
+    }
+    return allMenuItems;
+  };
+
+  const menuItems = getMenuItems();
+  const quickActions = getQuickActions();
+
   const renderDrawerItem = (item: any, index: number) => {
     if (item.isParent) {
       const isExpanded = expandedMenu === item.title;
@@ -195,11 +318,18 @@ export default function Dashboard() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
-
         <View style={styles.header}>
           <View style={styles.logo}>
             <Ionicons name="radio-button-on" size={24} color="#fff" />
@@ -210,50 +340,76 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Welcome */}
-
+        {/* Welcome Section with User Name and Info */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.title}>
-            Welcome back, {user?.full_name || "User"}
-          </Text>
+          <Text style={styles.greeting}>👋 Hello!</Text>
+          <Text style={styles.title}>{userName}</Text>
 
-          <Text style={styles.subtitle}>
-            You are logged in as{" "}
-            <Text style={styles.bold}>{user?.role || "Administrator"}</Text>
-          </Text>
+          <View style={styles.userInfoContainer}>
+            <View style={styles.roleBadge}>
+              <Ionicons 
+                name={userRole === "coach" ? "person-outline" : "shield-outline"} 
+                size={16} 
+                color="#2563EB" 
+              />
+              <Text style={styles.roleBadgeText}>
+                {userRole === "coach" ? "Coach" : "Administrator"}
+              </Text>
+            </View>
+          </View>
+
+          {user?.email && (
+            <View style={styles.contactInfo}>
+              <Ionicons name="mail-outline" size={16} color="#6B7280" />
+              <Text style={styles.contactText}>{user?.email}</Text>
+            </View>
+          )}
+          
+          {user?.mobile && (
+            <View style={styles.contactInfo}>
+              <Ionicons name="call-outline" size={16} color="#6B7280" />
+              <Text style={styles.contactText}>{user?.mobile}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Cards */}
+        {/* Role-specific cards - only show for administrators */}
+        {userRole !== "coach" && (
+          <>
+            <View style={styles.card}>
+              <View>
+                <Text style={styles.cardTitle}>Total Students</Text>
+                <Text style={styles.cardNumber}>
+                  {dashboard.totalStudents}
+                </Text>
+              </View>
 
-        <View style={styles.card}>
-          <View>
-            <Text style={styles.cardTitle}>Total Students</Text>
+              <View style={styles.iconBox}>
+                <Ionicons name="people-outline" size={24} color="#2563EB" />
+              </View>
+            </View>
 
-            <Text style={styles.cardNumber}>2</Text>
-          </View>
+            <View style={styles.card}>
+              <View>
+                <Text style={styles.cardTitle}>Age Groups</Text>
+                <Text style={styles.cardNumber}>
+                  {dashboard.totalAgeGroups}
+                </Text>
+              </View>
 
-          <View style={styles.iconBox}>
-            <Ionicons name="people-outline" size={24} color="#2563EB" />
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View>
-            <Text style={styles.cardTitle}>Age Groups</Text>
-
-            <Text style={styles.cardNumber}>5</Text>
-          </View>
-
-          <View style={[styles.iconBox, { backgroundColor: "#E7FFF0" }]}>
-            <Ionicons name="radio-button-on-outline" size={24} color="green" />
-          </View>
-        </View>
+              <View style={[styles.iconBox, { backgroundColor: "#E7FFF0" }]}>
+                <Ionicons name="radio-button-on-outline" size={24} color="green" />
+              </View>
+            </View>
+          </>
+        )}
 
         <View style={styles.card}>
           <View>
             <Text style={styles.cardTitle}>Practice Sessions</Text>
-
-            <Text style={styles.cardNumber}>2</Text>
+            <Text style={styles.cardNumber}>
+              {dashboard.totalSessions}
+            </Text>
           </View>
 
           <View style={[styles.iconBox, { backgroundColor: "#F4EBFF" }]}>
@@ -261,46 +417,50 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Payment Cards Section */}
-        <Text style={styles.quickTitle}>Payment Overview</Text>
+        {/* Payment Overview - only for administrators */}
+        {userRole !== "coach" && (
+          <>
+            <Text style={styles.quickTitle}>Payment Overview</Text>
 
-        <View style={styles.paymentCard}>
-          <View style={styles.paymentCardLeft}>
-            <View style={[styles.paymentIconBox, { backgroundColor: "#FEF3C7" }]}>
-              <Ionicons name="trending-up-outline" size={24} color="#D97706" />
+            <View style={styles.paymentCard}>
+              <View style={styles.paymentCardLeft}>
+                <View style={[styles.paymentIconBox, { backgroundColor: "#FEF3C7" }]}>
+                  <Ionicons name="trending-up-outline" size={24} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={styles.paymentCardTitle}>Payment Tracker</Text>
+                  <Text style={styles.paymentCardSubtitle}>View payment status</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.paymentActionBtn}
+                onPress={() => router.push("/payment-tracker" as any)}
+              >
+                <Text style={styles.paymentActionText}>View</Text>
+                <Ionicons name="arrow-forward-outline" size={16} color="#2563EB" />
+              </TouchableOpacity>
             </View>
-            <View>
-              <Text style={styles.paymentCardTitle}>Payment Tracker</Text>
-              <Text style={styles.paymentCardSubtitle}>View payment status</Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.paymentActionBtn}
-            onPress={() => router.push("/payment-tracker" as any)}
-          >
-            <Text style={styles.paymentActionText}>View</Text>
-            <Ionicons name="arrow-forward-outline" size={16} color="#2563EB" />
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.paymentCard}>
-          <View style={styles.paymentCardLeft}>
-            <View style={[styles.paymentIconBox, { backgroundColor: "#E0E7FF" }]}>
-              <Ionicons name="receipt-outline" size={24} color="#4F46E5" />
+            <View style={styles.paymentCard}>
+              <View style={styles.paymentCardLeft}>
+                <View style={[styles.paymentIconBox, { backgroundColor: "#E0E7FF" }]}>
+                  <Ionicons name="receipt-outline" size={24} color="#4F46E5" />
+                </View>
+                <View>
+                  <Text style={styles.paymentCardTitle}>Payment Records</Text>
+                  <Text style={styles.paymentCardSubtitle}>View all transactions</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.paymentActionBtn}
+                onPress={() => router.push("/payment-records" as any)}
+              >
+                <Text style={styles.paymentActionText}>View</Text>
+                <Ionicons name="arrow-forward-outline" size={16} color="#2563EB" />
+              </TouchableOpacity>
             </View>
-            <View>
-              <Text style={styles.paymentCardTitle}>Payment Records</Text>
-              <Text style={styles.paymentCardSubtitle}>View all transactions</Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.paymentActionBtn}
-            onPress={() => router.push("/payment-records" as any)}
-          >
-            <Text style={styles.paymentActionText}>View</Text>
-            <Ionicons name="arrow-forward-outline" size={16} color="#2563EB" />
-          </TouchableOpacity>
-        </View>
+          </>
+        )}
 
         <Text style={styles.quickTitle}>Quick Actions</Text>
 
@@ -326,15 +486,15 @@ export default function Dashboard() {
       </ScrollView>
 
       {/* Drawer */}
-
       <Modal transparent visible={drawerVisible} animationType="fade">
         <View style={styles.overlay}>
           <View style={styles.drawer}>
             <View style={styles.drawerHeader}>
               <View>
-                <Text style={styles.drawerName}>{user?.full_name}</Text>
-
-                <Text style={styles.drawerRole}>{user?.role}</Text>
+                <Text style={styles.drawerName}>{userName}</Text>
+                <Text style={styles.drawerRole}>
+                  {user?.role || "Administrator"}
+                </Text>
               </View>
 
               <TouchableOpacity onPress={() => setDrawerVisible(false)}>
@@ -354,9 +514,8 @@ export default function Dashboard() {
 
             <View style={styles.line} />
 
-            <TouchableOpacity style={styles.logoutBtn}>
-              <Ionicons name="log-out-outline" size={24} />
-
+            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+              <Ionicons name="log-out-outline" size={24} color="#EF4444" />
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
@@ -371,6 +530,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F5F5",
     paddingHorizontal: 20,
+  },
+  
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   header: {
@@ -392,20 +556,62 @@ const styles = StyleSheet.create({
 
   welcomeSection: {
     marginBottom: 25,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  greeting: {
+    fontSize: 16,
+    color: "#6B7280",
+    marginBottom: 2,
   },
 
   title: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 8,
   },
 
-  subtitle: {
-    color: "#666",
-    marginTop: 5,
+  userInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
   },
 
-  bold: {
-    fontWeight: "700",
+  roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    alignSelf: "flex-start",
+  },
+
+  roleBadgeText: {
+    fontSize: 14,
+    color: "#2563EB",
+    fontWeight: "600",
+  },
+
+  contactInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    gap: 8,
+  },
+
+  contactText: {
+    color: "#6B7280",
+    fontSize: 14,
   },
 
   card: {
@@ -415,15 +621,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
 
   cardTitle: {
     color: "#68738D",
+    fontSize: 14,
   },
 
   cardNumber: {
     fontSize: 40,
     fontWeight: "bold",
+    color: "#1F2937",
   },
 
   iconBox: {
@@ -440,6 +649,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 15,
     marginTop: 10,
+    color: "#1F2937",
   },
 
   actionCard: {
@@ -464,9 +674,9 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 17,
     fontWeight: "600",
+    color: "#1F2937",
   },
 
-  // Payment Card Styles
   paymentCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -535,15 +745,18 @@ const styles = StyleSheet.create({
   drawerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
 
   drawerName: {
     fontSize: 28,
     fontWeight: "700",
+    color: "#1F2937",
   },
 
   drawerRole: {
     color: "#64748B",
+    marginTop: 5,
   },
 
   line: {
@@ -567,6 +780,7 @@ const styles = StyleSheet.create({
   drawerText: {
     marginLeft: 18,
     fontSize: 18,
+    color: "#1F2937",
   },
 
   subMenuContainer: {
@@ -607,5 +821,6 @@ const styles = StyleSheet.create({
   logoutText: {
     marginLeft: 10,
     fontWeight: "600",
+    color: "#EF4444",
   },
 });
