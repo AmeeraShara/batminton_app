@@ -1,3 +1,4 @@
+// Settings.tsx or Settings.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -114,14 +115,8 @@ export default function Settings() {
       return;
     }
 
-    // For editing, if password is provided, it must match confirmation
-    if (editId && password.trim() && password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    // For new members, password must match confirmation
-    if (!editId && password !== confirmPassword) {
+    // Password validation
+    if (password.trim() && password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
@@ -139,7 +134,6 @@ export default function Settings() {
       memberData.password = password.trim();
     }
 
-
     try {
       setLoading(true);
       
@@ -150,8 +144,6 @@ export default function Settings() {
         url = `${getApiBaseUrl()}/${editId}`;
         method = 'PUT';
       }
-
-
       
       const response = await fetch(url, {
         method: method,
@@ -164,7 +156,17 @@ export default function Settings() {
       const responseText = await response.text();
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}\n${responseText}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use the text
+          if (responseText) {
+            errorMessage = responseText;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = JSON.parse(responseText);
@@ -202,7 +204,6 @@ export default function Settings() {
                   'Content-Type': 'application/json',
                 },
               });
-              
               
               const responseText = await response.text();
               
