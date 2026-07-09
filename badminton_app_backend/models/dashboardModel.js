@@ -40,7 +40,28 @@ class DashboardModel {
                 return callback(err);
             }
             
-            console.log('✅ Dashboard data fetched');
+            console.log('✅ Dashboard data fetched:', results);
+            
+            // Check if results exists and has data
+            if (!results || results.length === 0) {
+                console.log('⚠️ No results returned, returning default values');
+                return callback(null, {
+                    totalStudents: 0,
+                    newStudentsToday: 0,
+                    totalAgeGroups: 0,
+                    totalSessions: 0,
+                    upcomingSessions: 0,
+                    todayAttendance: 0,
+                    totalPresent: 0,
+                    presentToday: 0,
+                    absentToday: 0,
+                    totalPayments: 0,
+                    totalRevenue: 0,
+                    todayRevenue: 0,
+                    totalStaff: 0
+                });
+            }
+            
             callback(null, results[0]);
         });
     }

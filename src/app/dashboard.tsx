@@ -12,7 +12,6 @@ import {
   View,
 } from "react-native";
 
-
 const API_URL = "http://192.168.100.169:5000/api"; 
 
 export default function Dashboard() {
@@ -28,6 +27,11 @@ export default function Dashboard() {
     totalStudents: 0,
     totalAgeGroups: 0,
     totalSessions: 0,
+    totalStaff: 0,
+    newStudentsToday: 0,
+    todayAttendance: 0,
+    totalRevenue: 0,
+    todayRevenue: 0
   });
 
   useEffect(() => {
@@ -64,25 +68,61 @@ export default function Dashboard() {
   // Load dashboard data
   const loadDashboard = async () => {
     try {
-      
+      console.log('📊 Fetching dashboard data...');
       const response = await fetch(`${API_URL}/dashboard`);
+      
+      console.log('📊 Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-
-      setDashboard({
-        totalStudents: data.totalStudents || 0,
-        totalAgeGroups: data.totalAgeGroups || 0,
-        totalSessions: data.totalSessions || 0,
-      });
+      console.log('📊 Dashboard API response:', JSON.stringify(data, null, 2));
+      
+      // Check if data has the expected structure
+      if (data.success && data.data) {
+        setDashboard({
+          totalStudents: data.data.totalStudents || 0,
+          totalAgeGroups: data.data.totalAgeGroups || 0,
+          totalSessions: data.data.totalSessions || 0,
+          totalStaff: data.data.totalStaff || 0,
+          newStudentsToday: data.data.newStudentsToday || 0,
+          todayAttendance: data.data.todayAttendance || 0,
+          totalRevenue: data.data.totalRevenue || 0,
+          todayRevenue: data.data.todayRevenue || 0
+        });
+      } else {
+        console.error('Invalid data structure:', data);
+        // Use default values if structure is wrong
+        setDashboard({
+          totalStudents: 0,
+          totalAgeGroups: 0,
+          totalSessions: 0,
+          totalStaff: 0,
+          newStudentsToday: 0,
+          todayAttendance: 0,
+          totalRevenue: 0,
+          todayRevenue: 0
+        });
+      }
     } catch (error) {
+      console.error('Error loading dashboard:', error);
       Alert.alert(
         "Connection Error",
         "Failed to load dashboard data. Please check your connection."
       );
+      // Set default values on error
+      setDashboard({
+        totalStudents: 0,
+        totalAgeGroups: 0,
+        totalSessions: 0,
+        totalStaff: 0,
+        newStudentsToday: 0,
+        todayAttendance: 0,
+        totalRevenue: 0,
+        todayRevenue: 0
+      });
     }
   };
 
@@ -134,16 +174,6 @@ export default function Dashboard() {
         title: "Manage Students",
         icon: "people-outline",
         route: "/students",
-      },
-      {
-        title: "Payment Tracker",
-        icon: "trending-up-outline",
-        route: "/payment-tracker",
-      },
-      {
-        title: "Payment Records",
-        icon: "receipt-outline",
-        route: "/payment-records",
       },
       {
         title: "Age Groups",
@@ -337,7 +367,7 @@ export default function Dashboard() {
 
         {/* Welcome Section with User Name and Info */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.greeting}>👋 Hello!</Text>
+          <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.title}>{userName}</Text>
 
           <View style={styles.userInfoContainer}>
@@ -348,114 +378,94 @@ export default function Dashboard() {
                 color="#2563EB" 
               />
               <Text style={styles.roleBadgeText}>
-                {userRole === "coach" ? "Coach" : "Administrator"}
+                You are logged in as {userRole === "coach" ? "Coach" : "Administrator"}
               </Text>
             </View>
           </View>
-
-          {user?.email && (
-            <View style={styles.contactInfo}>
-              <Ionicons name="mail-outline" size={16} color="#6B7280" />
-              <Text style={styles.contactText}>{user?.email}</Text>
-            </View>
-          )}
-          
-          {user?.mobile && (
-            <View style={styles.contactInfo}>
-              <Ionicons name="call-outline" size={16} color="#6B7280" />
-              <Text style={styles.contactText}>{user?.mobile}</Text>
-            </View>
-          )}
         </View>
 
-        {/* Role-specific cards - only show for administrators */}
-        {userRole !== "coach" && (
-          <>
-            <View style={styles.card}>
-              <View>
-                <Text style={styles.cardTitle}>Total Students</Text>
-                <Text style={styles.cardNumber}>
-                  {dashboard.totalStudents}
-                </Text>
+        {/* Stats Cards - 1 Column */}
+        <View style={styles.statsContainer}>
+          {/* Total Students Card */}
+          <TouchableOpacity 
+            style={[styles.statsCard, styles.cardStudents]}
+            onPress={() => router.push("/students" as any)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.statsCardContent}>
+              <View style={styles.statsCardLeft}>
+                <View style={styles.statsCardIconBox}>
+                  <Ionicons name="people-outline" size={28} color="#2563EB" />
+                </View>
+                <View>
+                  <Text style={styles.statsCardLabel}>Total Students</Text>
+                  <Text style={styles.statsCardNumber}>{dashboard.totalStudents}</Text>
+                </View>
               </View>
-
-              <View style={styles.iconBox}>
-                <Ionicons name="people-outline" size={24} color="#2563EB" />
-              </View>
+              <Ionicons name="arrow-forward-outline" size={22} color="#2563EB" />
             </View>
+          </TouchableOpacity>
 
-            <View style={styles.card}>
-              <View>
-                <Text style={styles.cardTitle}>Age Groups</Text>
-                <Text style={styles.cardNumber}>
-                  {dashboard.totalAgeGroups}
-                </Text>
+          {/* Age Groups Card */}
+          <TouchableOpacity 
+            style={[styles.statsCard, styles.cardAgeGroups]}
+            onPress={() => router.push("/agegroups" as any)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.statsCardContent}>
+              <View style={styles.statsCardLeft}>
+                <View style={[styles.statsCardIconBox, { backgroundColor: "#E7FFF0" }]}>
+                  <Ionicons name="radio-button-on-outline" size={28} color="#22C55E" />
+                </View>
+                <View>
+                  <Text style={styles.statsCardLabel}>Age Groups</Text>
+                  <Text style={styles.statsCardNumber}>{dashboard.totalAgeGroups}</Text>
+                </View>
               </View>
-
-              <View style={[styles.iconBox, { backgroundColor: "#E7FFF0" }]}>
-                <Ionicons name="radio-button-on-outline" size={24} color="green" />
-              </View>
+              <Ionicons name="arrow-forward-outline" size={22} color="#22C55E" />
             </View>
-          </>
-        )}
+          </TouchableOpacity>
 
-        <View style={styles.card}>
-          <View>
-            <Text style={styles.cardTitle}>Practice Sessions</Text>
-            <Text style={styles.cardNumber}>
-              {dashboard.totalSessions}
-            </Text>
-          </View>
+          {/* Practice Sessions Card */}
+          <TouchableOpacity 
+            style={[styles.statsCard, styles.cardSessions]}
+            onPress={() => router.push("/attendance" as any)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.statsCardContent}>
+              <View style={styles.statsCardLeft}>
+                <View style={[styles.statsCardIconBox, { backgroundColor: "#F4EBFF" }]}>
+                  <Ionicons name="calendar-outline" size={28} color="#6D28D9" />
+                </View>
+                <View>
+                  <Text style={styles.statsCardLabel}>Practice Sessions</Text>
+                  <Text style={styles.statsCardNumber}>{dashboard.totalSessions}</Text>
+                </View>
+              </View>
+              <Ionicons name="arrow-forward-outline" size={22} color="#6D28D9" />
+            </View>
+          </TouchableOpacity>
 
-          <View style={[styles.iconBox, { backgroundColor: "#F4EBFF" }]}>
-            <Ionicons name="calendar-outline" size={24} color="#6D28D9" />
-          </View>
+          {/* Team Members Card */}
+          <TouchableOpacity 
+            style={[styles.statsCard, styles.cardTeam]}
+            onPress={() => router.push("/management-team" as any)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.statsCardContent}>
+              <View style={styles.statsCardLeft}>
+                <View style={[styles.statsCardIconBox, { backgroundColor: "#FEF3C7" }]}>
+                  <Ionicons name="people-circle-outline" size={28} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={styles.statsCardLabel}>Team Members</Text>
+                  <Text style={styles.statsCardNumber}>{dashboard.totalStaff}</Text>
+                </View>
+              </View>
+              <Ionicons name="arrow-forward-outline" size={22} color="#D97706" />
+            </View>
+          </TouchableOpacity>
         </View>
-
-        {/* Payment Overview - only for administrators */}
-        {userRole !== "coach" && (
-          <>
-            <Text style={styles.quickTitle}>Payment Overview</Text>
-
-            <View style={styles.paymentCard}>
-              <View style={styles.paymentCardLeft}>
-                <View style={[styles.paymentIconBox, { backgroundColor: "#FEF3C7" }]}>
-                  <Ionicons name="trending-up-outline" size={24} color="#D97706" />
-                </View>
-                <View>
-                  <Text style={styles.paymentCardTitle}>Payment Tracker</Text>
-                  <Text style={styles.paymentCardSubtitle}>View payment status</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                style={styles.paymentActionBtn}
-                onPress={() => router.push("/payment-tracker" as any)}
-              >
-                <Text style={styles.paymentActionText}>View</Text>
-                <Ionicons name="arrow-forward-outline" size={16} color="#2563EB" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.paymentCard}>
-              <View style={styles.paymentCardLeft}>
-                <View style={[styles.paymentIconBox, { backgroundColor: "#E0E7FF" }]}>
-                  <Ionicons name="receipt-outline" size={24} color="#4F46E5" />
-                </View>
-                <View>
-                  <Text style={styles.paymentCardTitle}>Payment Records</Text>
-                  <Text style={styles.paymentCardSubtitle}>View all transactions</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                style={styles.paymentActionBtn}
-                onPress={() => router.push("/payment-records" as any)}
-              >
-                <Text style={styles.paymentActionText}>View</Text>
-                <Ionicons name="arrow-forward-outline" size={16} color="#2563EB" />
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
 
         <Text style={styles.quickTitle}>Quick Actions</Text>
 
@@ -568,7 +578,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700",
     color: "#1F2937",
     marginBottom: 8,
@@ -592,58 +602,85 @@ const styles = StyleSheet.create({
   },
 
   roleBadgeText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#2563EB",
-    fontWeight: "600",
+    fontWeight: "500",
   },
 
-  contactInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-    gap: 8,
-  },
-
-  contactText: {
-    color: "#6B7280",
-    fontSize: 14,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    padding: 25,
-    borderRadius: 20,
+  // Stats Container - 1 Column
+  statsContainer: {
     marginBottom: 20,
+  },
+
+  statsCard: {
+    backgroundColor: "#fff",
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  cardStudents: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#2563EB",
+  },
+
+  cardAgeGroups: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#22C55E",
+  },
+
+  cardSessions: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#6D28D9",
+  },
+
+  cardTeam: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#D97706",
+  },
+
+  statsCardContent: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
+  },
+
+  statsCardLeft: {
+    flexDirection: "row",
     alignItems: "center",
   },
 
-  cardTitle: {
-    color: "#68738D",
-    fontSize: 14,
-  },
-
-  cardNumber: {
-    fontSize: 40,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-
-  iconBox: {
-    width: 45,
-    height: 45,
+  statsCardIconBox: {
+    width: 50,
+    height: 50,
     borderRadius: 14,
     backgroundColor: "#EEF2FF",
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 15,
+  },
+
+  statsCardLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  statsCardNumber: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#1F2937",
   },
 
   quickTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 15,
-    marginTop: 10,
+    marginTop: 5,
     color: "#1F2937",
   },
 
@@ -672,58 +709,7 @@ const styles = StyleSheet.create({
     color: "#1F2937",
   },
 
-  paymentCard: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 18,
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  paymentCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  paymentIconBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-
-  paymentCardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1F2937",
-  },
-
-  paymentCardSubtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-
-  paymentActionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    gap: 4,
-  },
-
-  paymentActionText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-
+  // Drawer styles
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",

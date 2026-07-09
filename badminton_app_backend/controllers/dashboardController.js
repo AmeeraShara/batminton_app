@@ -14,9 +14,28 @@ class DashboardController {
                 });
             }
 
+            console.log('📊 Dashboard result:', result);
+
+            // Ensure we have valid data
+            const data = result || {};
+            
             res.json({
                 success: true,
-                data: result
+                data: {
+                    totalStudents: data.totalStudents || 0,
+                    newStudentsToday: data.newStudentsToday || 0,
+                    totalAgeGroups: data.totalAgeGroups || 0,
+                    totalSessions: data.totalSessions || 0,
+                    upcomingSessions: data.upcomingSessions || 0,
+                    todayAttendance: data.todayAttendance || 0,
+                    totalPresent: data.totalPresent || 0,
+                    presentToday: data.presentToday || 0,
+                    absentToday: data.absentToday || 0,
+                    totalPayments: data.totalPayments || 0,
+                    totalRevenue: data.totalRevenue || 0,
+                    todayRevenue: data.todayRevenue || 0,
+                    totalStaff: data.totalStaff || 0
+                }
             });
         });
     }
