@@ -1,16 +1,42 @@
-const Dashboard = require("../models/dashboardModel");
+const DashboardModel = require('../models/dashboardModel');
 
-exports.getCounts = (req, res) => {
-  Dashboard.getDashboardCounts((err, result) => {
-    if (err) {
-      console.error("Dashboard error:", err);
-      return res.status(500).json({
-        success: false,
-        message: err.message,
-      });
+class DashboardController {
+    static getCounts(req, res) {
+        console.log('📊 Dashboard API called');
+        
+        DashboardModel.getDashboardCounts((err, result) => {
+            if (err) {
+                console.error('❌ Dashboard error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to fetch dashboard data',
+                    error: err.message
+                });
+            }
+
+            res.json({
+                success: true,
+                data: result
+            });
+        });
     }
 
-    // Send the counts
-    res.json(result);
-  });
-};
+    static getDetailedStats(req, res) {
+        DashboardModel.getDetailedStats((err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to fetch detailed stats',
+                    error: err.message
+                });
+            }
+
+            res.json({
+                success: true,
+                data: result
+            });
+        });
+    }
+}
+
+module.exports = DashboardController;

@@ -1,7 +1,8 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const controller = require("../controllers/dashboardController");
+const DashboardController = require('../controllers/dashboardController');
 
-router.get("/", controller.getCounts);
+router.get('/', DashboardController.getCounts);
+router.get('/detailed', DashboardController.getDetailedStats);
 
 module.exports = router;

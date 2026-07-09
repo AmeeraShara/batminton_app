@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 
-const API_URL = "http://192.168.100.169:5000/api"; // Default for Android emulator
+const API_URL = "http://192.168.100.169:5000/api"; 
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -49,7 +49,6 @@ export default function Dashboard() {
         setUser(parsedUser);
         setUserName(name);
         setUserRole(role);
-        console.log("User loaded:", { name, role });
       } else {
         console.log("No user data found in storage");
         // Redirect to login if no user
@@ -65,7 +64,6 @@ export default function Dashboard() {
   // Load dashboard data
   const loadDashboard = async () => {
     try {
-      console.log("Fetching dashboard data from:", `${API_URL}/dashboard`);
       
       const response = await fetch(`${API_URL}/dashboard`);
       
@@ -74,7 +72,6 @@ export default function Dashboard() {
       }
       
       const data = await response.json();
-      console.log("Dashboard data received:", data);
 
       setDashboard({
         totalStudents: data.totalStudents || 0,
@@ -82,7 +79,6 @@ export default function Dashboard() {
         totalSessions: data.totalSessions || 0,
       });
     } catch (error) {
-      console.log("Error loading dashboard:", error);
       Alert.alert(
         "Connection Error",
         "Failed to load dashboard data. Please check your connection."
@@ -117,7 +113,6 @@ export default function Dashboard() {
 
   // Quick actions based on role
   const getQuickActions = () => {
-    console.log("Getting quick actions for role:", userRole);
     
     if (userRole === "coach") {
       return [
