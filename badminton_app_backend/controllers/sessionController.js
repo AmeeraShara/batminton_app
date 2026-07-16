@@ -51,15 +51,23 @@ exports.updateSession = (req, res) => {
   });
 };
 
-// Delete
 exports.deleteSession = (req, res) => {
-  Session.deleteSession(req.params.id, (err) => {
+  console.log("========== DELETE REQUEST ==========");
+  console.log("Session ID:", req.params.id);
+
+  Session.deleteSession(req.params.id, (err, result) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json(err);
+      console.error("DELETE ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
     }
 
+    console.log("DELETE RESULT:", result);
+
     res.json({
+      success: true,
       message: "Session deleted successfully",
     });
   });

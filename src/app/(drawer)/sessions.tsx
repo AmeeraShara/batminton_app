@@ -290,35 +290,26 @@ export default function Sessions() {
     setEditId(null);
   };
 
-  const remove = async (id: number) => {
-    Alert.alert(
-      "Delete Session",
-      "Are you sure you want to delete this session?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const response = await fetch(`${API}/${id}`, {
-                method: "DELETE",
-              });
-              if (response.ok) {
-                await loadSessions();
-                Alert.alert("Success", "Session deleted successfully");
-              } else {
-                Alert.alert("Error", "Failed to delete session");
-              }
-            } catch (error) {
-              console.log(error);
-              Alert.alert("Error", "Failed to delete session");
-            }
-          },
-        },
-      ],
-    );
-  };
+const remove = async (id: number) => {
+
+  try {
+    const response = await fetch(`${API}/${id}`, {
+      method: "DELETE",
+    });
+
+
+    const data = await response.json();
+
+    if (response.ok) {
+      await loadSessions();
+      alert("Session deleted successfully");
+    } else {
+      alert(data.error || "Delete failed");
+    }
+  } catch (error) {
+    console.log("Fetch Error:", error);
+  }
+};
 
   const formatTime = (time: string) => {
     if (!time) return "-";
