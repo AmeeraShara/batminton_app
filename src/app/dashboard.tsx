@@ -98,8 +98,6 @@ export default function Dashboard() {
   };
 
   const logout = async () => {
-    
-    // Show alert first
     Alert.alert(
       "Logout",
       "Are you sure you want to logout?",
@@ -107,32 +105,17 @@ export default function Dashboard() {
         {
           text: "Cancel",
           style: "cancel",
-          onPress: () => console.log(""),
         },
         {
           text: "Logout",
           style: "destructive",
           onPress: async () => {
-            
             try {
               await AsyncStorage.removeItem("user");
-              
-              // Step 6: Close drawer
               setDrawerVisible(false);
-              
-              // Step 7: Navigate
-              
-              // Try multiple navigation methods
-              try {
-                router.replace("/login");
-              } catch (navError) {
-                router.push("/login");
-              }
-              
- 
-              
+              router.replace("/login");
             } catch (error) {
-              console.log(" Logout error:", error);
+              console.log("Logout error:", error);
               Alert.alert("Error", "Failed to logout. Please try again.");
             }
           },
@@ -141,30 +124,96 @@ export default function Dashboard() {
     );
   };
 
-  // TEST: Direct logout without alert
-  const directLogout = async () => {
-    try {
-      await AsyncStorage.removeItem("user");
-      setDrawerVisible(false);
-      router.replace("/login");
-    } catch (error) {
-      console.log(" Error:", error);
+  // Get stats based on role
+  const getStatsCards = () => {
+    if (userRole === "coach") {
+      // Coach only sees sessions and attendance
+      return [
+        {
+          id: 'sessions',
+          title: "Practice Sessions",
+          value: dashboard.totalSessions,
+          icon: "calendar-outline",
+          route: "/attendance",
+          color: "#6D28D9",
+          bgColor: "#F4EBFF",
+          borderColor: "#6D28D9"
+        },
+        {
+          id: 'attendance',
+          title: "Today's Attendance",
+          value: dashboard.todayAttendance,
+          icon: "checkbox-outline",
+          route: "/attendance",
+          color: "#2563EB",
+          bgColor: "#EEF2FF",
+          borderColor: "#2563EB"
+        }
+      ];
     }
+    
+    // Admin sees all stats
+    return [
+      {
+        id: 'students',
+        title: "Total Students",
+        value: dashboard.totalStudents,
+        icon: "people-outline",
+        route: "/students",
+        color: "#2563EB",
+        bgColor: "#EEF2FF",
+        borderColor: "#2563EB"
+      },
+      {
+        id: 'agegroups',
+        title: "Age Groups",
+        value: dashboard.totalAgeGroups,
+        icon: "radio-button-on-outline",
+        route: "/agegroups",
+        color: "#22C55E",
+        bgColor: "#E7FFF0",
+        borderColor: "#22C55E"
+      },
+      {
+        id: 'sessions',
+        title: "Practice Sessions",
+        value: dashboard.totalSessions,
+        icon: "calendar-outline",
+        route: "/attendance",
+        color: "#6D28D9",
+        bgColor: "#F4EBFF",
+        borderColor: "#6D28D9"
+      },
+      {
+        id: 'staff',
+        title: "Team Members",
+        value: dashboard.totalStaff,
+        icon: "people-circle-outline",
+        route: "/settings",
+        color: "#D97706",
+        bgColor: "#FEF3C7",
+        borderColor: "#D97706"
+      }
+    ];
   };
 
+  // Get quick actions based on role
   const getQuickActions = () => {
     if (userRole === "coach") {
       return [
         {
-          title: "Practice Sessions",
-          icon: "calendar-outline",
+          title: "Take Attendance",
+          icon: "checkbox-outline",
           route: "/attendance",
+          description: "Mark today's attendance"
         },
         {
-          title: "Settings",
-          icon: "settings-outline",
-          route: "/settings",
+          title: "View Sessions",
+          icon: "calendar-outline",
+          route: "/sessions",
+          description: "Check practice sessions"
         },
+
       ];
     }
     
@@ -173,112 +222,119 @@ export default function Dashboard() {
         title: "Manage Students",
         icon: "people-outline",
         route: "/students",
+        description: "Add or update students"
       },
       {
         title: "Age Groups",
         icon: "radio-button-on-outline",
         route: "/agegroups",
+        description: "Manage age categories"
       },
       {
         title: "Practice Sessions",
         icon: "calendar-outline",
         route: "/attendance",
+        description: "Schedule & track sessions"
       },
       {
-        title: "Settings",
-        icon: "settings-outline",
-        route: "/settings",
-      },
+        title: "Payment Tracker",
+        icon: "card-outline",
+        route: "/payment-tracker",
+        description: "View payment records"
+      }
     ];
   };
 
-  const allMenuItems = [
-    {
-      icon: "grid-outline",
-      title: "Dashboard",
-      route: "/dashboard",
-      isParent: false,
-    },
-    {
-      icon: "people-outline",
-      title: "Students",
-      route: "/students",
-      isParent: false,
-    },
-    {
-      icon: "checkbox-outline",
-      title: "Attendance",
-      route: "/attendance",
-      isParent: false,
-    },
-    {
-      icon: "card-outline",
-      title: "Payments",
-      route: null,
-      isParent: true,
-      children: [
-        {
-          icon: "trending-up-outline",
-          title: "Payment Tracker",
-          route: "/payment-tracker",
-        },
-        {
-          icon: "receipt-outline",
-          title: "Payment Records",
-          route: "/payment-records",
-        },
-      ],
-    },
-    {
-      icon: "radio-button-on-outline",
-      title: "Age Groups",
-      route: "/agegroups",
-      isParent: false,
-    },
-    {
-      icon: "calendar-outline",
-      title: "Sessions",
-      route: "/sessions",
-      isParent: false,
-    },
-    {
-      icon: "stats-chart-outline",
-      title: "Reports",
-      route: "/reports",
-      isParent: false,
-    },
-    {
-      icon: "settings-outline",
-      title: "Settings",
-      route: "/settings",
-      isParent: false,
-    },
-  ];
-
-  const coachMenuItems = [
-    {
-      icon: "grid-outline",
-      title: "Dashboard",
-      route: "/dashboard",
-      isParent: false,
-    },
-    {
-      icon: "calendar-outline",
-      title: "Sessions",
-      route: "/sessions",
-      isParent: false,
-    },
-  ];
-
+  // Get menu items based on role
   const getMenuItems = () => {
     if (userRole === "coach") {
-      return coachMenuItems;
-    }
-    return allMenuItems;
-  };
+      return [
+        {
+          icon: "grid-outline",
+          title: "Dashboard",
+          route: "/dashboard",
+          isParent: false,
+        },
+        {
+          icon: "calendar-outline",
+          title: "Sessions",
+          route: "/sessions",
+          isParent: false,
+        },
+                {
+          icon: "checkbox-outline",
+          title: "Attendance",
+          route: "/attendance",
+          isParent: false,
+        },
 
-  const menuItems = getMenuItems();
-  const quickActions = getQuickActions();
+        
+      ];
+    }
+    
+    return [
+      {
+        icon: "grid-outline",
+        title: "Dashboard",
+        route: "/dashboard",
+        isParent: false,
+      },
+      {
+        icon: "people-outline",
+        title: "Students",
+        route: "/students",
+        isParent: false,
+      },
+      {
+        icon: "checkbox-outline",
+        title: "Attendance",
+        route: "/attendance",
+        isParent: false,
+      },
+      {
+        icon: "card-outline",
+        title: "Payments",
+        route: null,
+        isParent: true,
+        children: [
+          {
+            icon: "trending-up-outline",
+            title: "Payment Tracker",
+            route: "/payment-tracker",
+          },
+          {
+            icon: "receipt-outline",
+            title: "Payment Records",
+            route: "/payment-records",
+          },
+        ],
+      },
+      {
+        icon: "radio-button-on-outline",
+        title: "Age Groups",
+        route: "/agegroups",
+        isParent: false,
+      },
+      {
+        icon: "calendar-outline",
+        title: "Sessions",
+        route: "/sessions",
+        isParent: false,
+      },
+      {
+        icon: "stats-chart-outline",
+        title: "Reports",
+        route: "/reports",
+        isParent: false,
+      },
+      {
+        icon: "settings-outline",
+        title: "Settings",
+        route: "/settings",
+        isParent: false,
+      },
+    ];
+  };
 
   const renderDrawerItem = (item: any, index: number) => {
     if (item.isParent) {
@@ -347,6 +403,10 @@ export default function Dashboard() {
     );
   }
 
+  const statsCards = getStatsCards();
+  const quickActions = getQuickActions();
+  const menuItems = getMenuItems();
+
   return (
     <>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -379,81 +439,30 @@ export default function Dashboard() {
         </View>
 
         <View style={styles.statsContainer}>
-          <TouchableOpacity 
-            style={[styles.statsCard, styles.cardStudents]}
-            onPress={() => router.push("/students" as any)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.statsCardContent}>
-              <View style={styles.statsCardLeft}>
-                <View style={styles.statsCardIconBox}>
-                  <Ionicons name="people-outline" size={28} color="#2563EB" />
+          {statsCards.map((card) => (
+            <TouchableOpacity 
+              key={card.id}
+              style={[
+                styles.statsCard, 
+                { borderLeftColor: card.borderColor }
+              ]}
+              onPress={() => router.push(card.route as any)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.statsCardContent}>
+                <View style={styles.statsCardLeft}>
+                  <View style={[styles.statsCardIconBox, { backgroundColor: card.bgColor }]}>
+                    <Ionicons name={card.icon as any} size={28} color={card.color} />
+                  </View>
+                  <View>
+                    <Text style={styles.statsCardLabel}>{card.title}</Text>
+                    <Text style={styles.statsCardNumber}>{card.value}</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.statsCardLabel}>Total Students</Text>
-                  <Text style={styles.statsCardNumber}>{dashboard.totalStudents}</Text>
-                </View>
+                <Ionicons name="arrow-forward-outline" size={22} color={card.color} />
               </View>
-              <Ionicons name="arrow-forward-outline" size={22} color="#2563EB" />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.statsCard, styles.cardAgeGroups]}
-            onPress={() => router.push("/agegroups" as any)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.statsCardContent}>
-              <View style={styles.statsCardLeft}>
-                <View style={[styles.statsCardIconBox, { backgroundColor: "#E7FFF0" }]}>
-                  <Ionicons name="radio-button-on-outline" size={28} color="#22C55E" />
-                </View>
-                <View>
-                  <Text style={styles.statsCardLabel}>Age Groups</Text>
-                  <Text style={styles.statsCardNumber}>{dashboard.totalAgeGroups}</Text>
-                </View>
-              </View>
-              <Ionicons name="arrow-forward-outline" size={22} color="#22C55E" />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.statsCard, styles.cardSessions]}
-            onPress={() => router.push("/attendance" as any)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.statsCardContent}>
-              <View style={styles.statsCardLeft}>
-                <View style={[styles.statsCardIconBox, { backgroundColor: "#F4EBFF" }]}>
-                  <Ionicons name="calendar-outline" size={28} color="#6D28D9" />
-                </View>
-                <View>
-                  <Text style={styles.statsCardLabel}>Practice Sessions</Text>
-                  <Text style={styles.statsCardNumber}>{dashboard.totalSessions}</Text>
-                </View>
-              </View>
-              <Ionicons name="arrow-forward-outline" size={22} color="#6D28D9" />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.statsCard, styles.cardTeam]}
-            onPress={() => router.push("/settings" as any)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.statsCardContent}>
-              <View style={styles.statsCardLeft}>
-                <View style={[styles.statsCardIconBox, { backgroundColor: "#FEF3C7" }]}>
-                  <Ionicons name="people-circle-outline" size={28} color="#D97706" />
-                </View>
-                <View>
-                  <Text style={styles.statsCardLabel}>Team Members</Text>
-                  <Text style={styles.statsCardNumber}>{dashboard.totalStaff}</Text>
-                </View>
-              </View>
-              <Ionicons name="arrow-forward-outline" size={22} color="#D97706" />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <Text style={styles.quickTitle}>Quick Actions</Text>
@@ -468,10 +477,13 @@ export default function Dashboard() {
               <View style={styles.smallIcon}>
                 <Ionicons name={item.icon as any} size={22} color="#2563EB" />
               </View>
-
-              <Text style={styles.actionText}>{item.title}</Text>
+              <View>
+                <Text style={styles.actionText}>{item.title}</Text>
+                {item.description && (
+                  <Text style={styles.actionDescription}>{item.description}</Text>
+                )}
+              </View>
             </View>
-
             <Ionicons name="arrow-forward-outline" size={22} color="#999" />
           </TouchableOpacity>
         ))}
@@ -508,7 +520,7 @@ export default function Dashboard() {
               <View style={{ marginTop: 20, gap: 10 }}>
                 <TouchableOpacity 
                   style={[styles.logoutBtn, { backgroundColor: '#fcfcfc', borderColor: '#ffffff', borderWidth: 2 }]} 
-                  onPress={directLogout}
+                  onPress={logout}
                 >
                   <Ionicons name="log-out-outline" size={24} color="#000000" />
                   <Text style={[styles.logoutText, { color: '#000000' }]}> LOGOUT</Text>
@@ -615,26 +627,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
-  },
-
-  cardStudents: {
     borderLeftWidth: 4,
-    borderLeftColor: "#2563EB",
-  },
-
-  cardAgeGroups: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#22C55E",
-  },
-
-  cardSessions: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#6D28D9",
-  },
-
-  cardTeam: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#D97706",
   },
 
   statsCardContent: {
@@ -652,7 +645,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: "#EEF2FF",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
@@ -690,6 +682,7 @@ const styles = StyleSheet.create({
   actionLeft: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
 
   smallIcon: {
@@ -700,6 +693,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     color: "#1F2937",
+  },
+
+  actionDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
   },
 
   overlay: {
