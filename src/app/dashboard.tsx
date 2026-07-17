@@ -97,32 +97,19 @@ export default function Dashboard() {
     }
   };
 
-  const logout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem("user");
-              setDrawerVisible(false);
-              router.replace("/login");
-            } catch (error) {
-              console.log("Logout error:", error);
-              Alert.alert("Error", "Failed to logout. Please try again.");
-            }
-          },
-        },
-      ]
-    );
-  };
+const logout = async () => {
+  try {
+    console.log("Logging out...");
+
+    await AsyncStorage.removeItem("user");
+
+    setDrawerVisible(false);
+
+    router.replace("/login");
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   // Get stats based on role
   const getStatsCards = () => {
