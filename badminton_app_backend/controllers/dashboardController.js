@@ -2,7 +2,6 @@ const DashboardModel = require('../models/dashboardModel');
 
 class DashboardController {
     static getCounts(req, res) {
-        console.log('📊 Dashboard API called');
         
         DashboardModel.getDashboardCounts((err, result) => {
             if (err) {
@@ -14,7 +13,6 @@ class DashboardController {
                 });
             }
 
-            console.log('📊 Dashboard result:', result);
 
             // Ensure we have valid data
             const data = result || {};
