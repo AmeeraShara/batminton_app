@@ -291,20 +291,17 @@ export default function Sessions() {
   };
 
 const remove = async (id: number) => {
-
   try {
     const response = await fetch(`${API}/${id}`, {
       method: "DELETE",
     });
 
-
     const data = await response.json();
 
     if (response.ok) {
       await loadSessions();
-      alert("Session deleted successfully");
     } else {
-      alert(data.error || "Delete failed");
+      console.log(data.error || "Delete failed");
     }
   } catch (error) {
     console.log("Fetch Error:", error);

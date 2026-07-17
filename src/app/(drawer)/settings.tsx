@@ -233,57 +233,31 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteMember = (id: string) => {
-    Alert.alert(
-      'Delete Member',
-      'Are you sure you want to delete this team member?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              const url = `${getApiBaseUrl()}/${id}`;
-              
-              const response = await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-              
-              const responseText = await response.text();
-              
-              let data;
-              try {
-                data = JSON.parse(responseText);
-              } catch (parseError) {
-                console.error('Failed to parse response:', parseError);
-                throw new Error('Invalid response from server');
-              }
-              
-              if (!response.ok) {
-                throw new Error(data.message || `HTTP error! status: ${response.status}`);
-              }
-              
-              Alert.alert('Success', data.message || 'Team member deleted successfully');
-              await fetchTeamMembers();
-            } catch (error) {
-              console.error('Error deleting team member:', error);
-              Alert.alert(
-                'Error', 
-                `Failed to delete team member.\n\n${error instanceof Error ? error.message : 'Unknown error'}`
-              );
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
-      ]
-    );
-  };
+const handleDeleteMember = async (id: string) => {
+  try {
+    setLoading(true);
+
+    const response = await fetch(`${getApiBaseUrl()}/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Delete failed");
+    }
+
+    // Refresh the list after successful deletion
+    await fetchTeamMembers();
+  } catch (err) {
+    console.error("Delete Error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEditMember = (member: TeamMember) => {
     setEditId(member.id);
