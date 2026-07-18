@@ -618,7 +618,6 @@ export default StyleSheet.create({
     marginTop: 12,
   },
 
-  // Add these styles to your existing styles object
 
 inputContainer: {
   marginBottom: 12,

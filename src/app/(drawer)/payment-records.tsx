@@ -63,8 +63,8 @@ export default function PaymentRecords() {
   ];
 
   const monthShort = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    "Jan", "Feb", "Mar", "Apr", "Ma", "Jun",
+    "Jul", "Au", "Sep", "Oct", "No", "Dec"
   ];
 
   // Get current month and year
