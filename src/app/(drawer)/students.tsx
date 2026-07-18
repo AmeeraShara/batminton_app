@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 
 export default function Students() {
@@ -35,6 +36,7 @@ export default function Students() {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [startYear, setStartYear] = useState(new Date().getFullYear());
 
+  // Form fields
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [studentName, setStudentName] = useState("");
   const [age, setAge] = useState("");
@@ -42,6 +44,17 @@ export default function Students() {
   const [parentContact, setParentContact] = useState("");
   const [email, setEmail] = useState("");
   const [ageGroupId, setAgeGroupId] = useState("");
+
+  // Validation errors
+  const [errors, setErrors] = useState({
+    registrationNumber: "",
+    studentName: "",
+    age: "",
+    contactNumber: "",
+    parentContact: "",
+    email: "",
+    ageGroupId: "",
+  });
 
   const monthNames = [
     "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -101,16 +114,139 @@ export default function Students() {
     setParentContact("");
     setEmail("");
     setAgeGroupId("");
+    setErrors({
+      registrationNumber: "",
+      studentName: "",
+      age: "",
+      contactNumber: "",
+      parentContact: "",
+      email: "",
+      ageGroupId: "",
+    });
+  };
+
+  // Validation functions
+  const validateRegistrationNumber = (value: string) => {
+    if (!value.trim()) return "Registration number is required";
+    if (value.trim().length < 3) return "Registration number must be at least 3 characters";
+    return "";
+  };
+
+  const validateStudentName = (value: string) => {
+    if (!value.trim()) return "Student name is required";
+    if (value.trim().length < 2) return "Name must be at least 2 characters";
+    if (!/^[a-zA-Z\s\-']+$/.test(value.trim())) return "Name should contain only letters, spaces, hyphens, and apostrophes";
+    return "";
+  };
+
+  const validateAge = (value: string) => {
+    if (!value.trim()) return "Age is required";
+    const ageNum = parseInt(value);
+    if (isNaN(ageNum)) return "Age must be a valid number";
+    if (ageNum < 1) return "Age must be at least 1";
+    if (ageNum > 120) return "Age must be less than 120";
+    return "";
+  };
+
+  const validateContactNumber = (value: string) => {
+    if (!value.trim()) return "Contact number is required";
+    const cleaned = value.replace(/\s/g, '');
+    if (!/^\d+$/.test(cleaned)) return "Contact number must contain only digits";
+    if (cleaned.length !== 10) return "Contact number must be exactly 10 digits";
+    return "";
+  };
+
+  const validateParentContact = (value: string) => {
+    if (!value.trim()) return "Parent contact is required";
+    const cleaned = value.replace(/\s/g, '');
+    if (!/^\d+$/.test(cleaned)) return "Parent contact must contain only digits";
+    if (cleaned.length !== 10) return "Parent contact must be exactly 10 digits";
+    return "";
+  };
+
+  const validateEmail = (value: string) => {
+    if (!value.trim()) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validateAgeGroup = (value: string) => {
+    if (!value) return "Please select an age group";
+    return "";
+  };
+
+  const validateForm = () => {
+    const regError = validateRegistrationNumber(registrationNumber);
+    const nameError = validateStudentName(studentName);
+    const ageError = validateAge(age);
+    const contactError = validateContactNumber(contactNumber);
+    const parentError = validateParentContact(parentContact);
+    const emailError = validateEmail(email);
+    const ageGroupError = validateAgeGroup(ageGroupId);
+
+    setErrors({
+      registrationNumber: regError,
+      studentName: nameError,
+      age: ageError,
+      contactNumber: contactError,
+      parentContact: parentError,
+      email: emailError,
+      ageGroupId: ageGroupError,
+    });
+
+    return !(regError || nameError || ageError || contactError || parentError || emailError || ageGroupError);
+  };
+
+  // Real-time validation on field change
+  const handleFieldChange = (field: string, value: string) => {
+    let error = "";
+    switch (field) {
+      case "registrationNumber":
+        setRegistrationNumber(value);
+        error = validateRegistrationNumber(value);
+        break;
+      case "studentName":
+        setStudentName(value);
+        error = validateStudentName(value);
+        break;
+      case "age":
+        setAge(value);
+        error = validateAge(value);
+        break;
+      case "contactNumber":
+        setContactNumber(value);
+        error = validateContactNumber(value);
+        break;
+      case "parentContact":
+        setParentContact(value);
+        error = validateParentContact(value);
+        break;
+      case "email":
+        setEmail(value);
+        error = validateEmail(value);
+        break;
+      case "ageGroupId":
+        setAgeGroupId(value);
+        error = validateAgeGroup(value);
+        break;
+    }
+    setErrors(prev => ({ ...prev, [field]: error }));
   };
 
   const saveStudent = async () => {
+    if (!validateForm()) {
+      Alert.alert("Validation Error", "Please fix all errors before saving.");
+      return;
+    }
+
     const body = {
-      registration_number: registrationNumber,
-      student_name: studentName,
-      age,
-      contact_number: contactNumber,
-      parent_contact: parentContact,
-      email,
+      registration_number: registrationNumber.trim(),
+      student_name: studentName.trim(),
+      age: parseInt(age),
+      contact_number: contactNumber.trim(),
+      parent_contact: parentContact.trim(),
+      email: email.trim(),
       age_group_id: ageGroupId,
     };
 
@@ -121,12 +257,14 @@ export default function Students() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        Alert.alert("Success", "Student updated successfully");
       } else {
         await fetch(API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        Alert.alert("Success", "Student added successfully");
       }
 
       loadStudents();
@@ -134,16 +272,32 @@ export default function Students() {
       setModal(false);
     } catch (error) {
       console.log(error);
+      Alert.alert("Error", "Failed to save student. Please try again.");
     }
   };
 
   const removeStudent = async (id: number) => {
-    try {
-      await fetch(`${API}/${id}`, { method: "DELETE" });
-      loadStudents();
-    } catch (error) {
-      console.log(error);
-    }
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this student?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await fetch(`${API}/${id}`, { method: "DELETE" });
+              loadStudents();
+              Alert.alert("Success", "Student deleted successfully");
+            } catch (error) {
+              console.log(error);
+              Alert.alert("Error", "Failed to delete student");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const viewStudent = async (student: any) => {
@@ -476,65 +630,106 @@ export default function Students() {
                 {editId ? "Edit Student" : "Add Student"}
               </Text>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Registration Number"
-                value={registrationNumber}
-                onChangeText={setRegistrationNumber}
-              />
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, errors.registrationNumber && styles.inputError]}
+                  placeholder="Registration Number"
+                  value={registrationNumber}
+                  onChangeText={(value) => handleFieldChange("registrationNumber", value)}
+                />
+                {errors.registrationNumber ? (
+                  <Text style={styles.errorText}>{errors.registrationNumber}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Student Name"
-                value={studentName}
-                onChangeText={setStudentName}
-              />
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, errors.studentName && styles.inputError]}
+                  placeholder="Student Name"
+                  value={studentName}
+                  onChangeText={(value) => handleFieldChange("studentName", value)}
+                />
+                {errors.studentName ? (
+                  <Text style={styles.errorText}>{errors.studentName}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Age"
-                keyboardType="numeric"
-                value={age}
-                onChangeText={setAge}
-              />
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, errors.age && styles.inputError]}
+                  placeholder="Age"
+                  keyboardType="numeric"
+                  value={age}
+                  onChangeText={(value) => handleFieldChange("age", value)}
+                />
+                {errors.age ? (
+                  <Text style={styles.errorText}>{errors.age}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Contact Number"
-                value={contactNumber}
-                onChangeText={setContactNumber}
-              />
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, errors.contactNumber && styles.inputError]}
+                  placeholder="Contact Number (10 digits)"
+                  keyboardType="phone-pad"
+                  value={contactNumber}
+                  onChangeText={(value) => handleFieldChange("contactNumber", value)}
+                  maxLength={10}
+                />
+                {errors.contactNumber ? (
+                  <Text style={styles.errorText}>{errors.contactNumber}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Parent Contact"
-                value={parentContact}
-                onChangeText={setParentContact}
-              />
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, errors.parentContact && styles.inputError]}
+                  placeholder="Parent Contact (10 digits)"
+                  keyboardType="phone-pad"
+                  value={parentContact}
+                  onChangeText={(value) => handleFieldChange("parentContact", value)}
+                  maxLength={10}
+                />
+                {errors.parentContact ? (
+                  <Text style={styles.errorText}>{errors.parentContact}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-              />
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, errors.email && styles.inputError]}
+                  placeholder="Email"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={(value) => handleFieldChange("email", value)}
+                  autoCapitalize="none"
+                />
+                {errors.email ? (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                ) : null}
+              </View>
 
-              <View style={styles.ageGroupContainer}>
-                <Picker
-                  selectedValue={ageGroupId}
-                  onValueChange={(value) => setAgeGroupId(value)}
-                  style={styles.picker}
-                  dropdownIconColor="#64748B"
-                >
-                  <Picker.Item label="Select Age Group" value="" />
-                  {ageGroups.map((group: any) => (
-                    <Picker.Item
-                      key={group.id}
-                      label={group.age_group_name}
-                      value={group.id}
-                    />
-                  ))}
-                </Picker>
+              <View style={styles.inputContainer}>
+                <View style={[styles.ageGroupContainer, errors.ageGroupId && styles.inputError]}>
+                  <Picker
+                    selectedValue={ageGroupId}
+                    onValueChange={(value) => handleFieldChange("ageGroupId", value)}
+                    style={styles.picker}
+                    dropdownIconColor="#64748B"
+                  >
+                    <Picker.Item label="Select Age Group" value="" />
+                    {ageGroups.map((group: any) => (
+                      <Picker.Item
+                        key={group.id}
+                        label={group.age_group_name}
+                        value={group.id}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+                {errors.ageGroupId ? (
+                  <Text style={styles.errorText}>{errors.ageGroupId}</Text>
+                ) : null}
               </View>
 
               <TouchableOpacity style={styles.save} onPress={saveStudent}>

@@ -617,4 +617,23 @@ export default StyleSheet.create({
     color: "#94A3B8",
     marginTop: 12,
   },
+
+  // Add these styles to your existing styles object
+
+inputContainer: {
+  marginBottom: 12,
+  width: '100%',
+},
+
+inputError: {
+  borderColor: '#EF4444',
+  borderWidth: 1,
+},
+
+errorText: {
+  color: '#EF4444',
+  fontSize: 12,
+  marginTop: 4,
+  marginLeft: 4,
+},
 });
